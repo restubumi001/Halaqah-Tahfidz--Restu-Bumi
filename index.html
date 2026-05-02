@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tahfidz Tracker · Halaqah Restu Bumi</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--e:#1a6b4a;--el:#25916a;--ep:#d4f0e5;--eu:#f0faf5;--g:#c49a2a;--gl:#e8c558;--gp:#fdf6dc;--cream:#fdfbf5;--ink:#1a1a18;--ink2:#3a3a35;--ink3:#7a7a6f;--ink4:#c5c5b8;--red:#c0392b;--redp:#fff0f0;--sh:0 2px 16px rgba(26,107,74,.10);--r:16px;--rs:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);min-height:100vh;overflow-x:hidden}
+header{background:linear-gradient(135deg,var(--e) 0%,#0f4a33 100%);position:relative;overflow:hidden}
+.hi{position:relative;z-index:1;padding:18px 18px 0}
+.ht{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.hico{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:20px;color:var(--gl);flex-shrink:0}
+.htit{font-size:16px;font-weight:800;color:#fff;line-height:1.2}
+.hsub{font-size:11px;color:rgba(255,255,255,.65);font-weight:500}
+.har{font-family:'Amiri',serif;font-size:18px;color:var(--gl);margin-left:auto}
+.syncbar{display:flex;align-items:center;gap:8px;padding:5px 18px;background:rgba(0,0,0,.2);font-size:11px;font-weight:600;color:rgba(255,255,255,.8)}
+.sdot{width:7px;height:7px;border-radius:50%;background:#666;flex-shrink:0}
+.sdot.live{background:#4ade80;box-shadow:0 0 6px #4ade80}.sdot.local{background:#facc15}.sdot.err{background:#f87171}
+.sspin{display:none;width:10px;height:10px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.sspin.on{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;position:relative;z-index:1;margin-top:4px}
+.tab{flex:1;padding:10px 4px;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;transition:all .2s;position:relative;display:flex;align-items:center;justify-content:center}
+.tab.on{color:#fff;background:rgba(255,255,255,.12)}
+.tab.on::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:3px;background:var(--gl);border-radius:3px 3px 0 0}
+main{max-width:960px;margin:0 auto;padding:16px 14px 90px}
+.pg{display:none}.pg.on{display:block}
+.dnav{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.dnav::-webkit-scrollbar{display:none}
+.dbt{flex-shrink:0;padding:6px 13px;border-radius:50px;border:1.5px solid var(--ink4);background:#fff;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--ink3);transition:all .18s;white-space:nowrap}
+.dbt.on{background:var(--e);border-color:var(--e);color:#fff;font-weight:700}
+.sr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.sc{background:#fff;border-radius:var(--rs);padding:13px 10px;box-shadow:var(--sh);text-align:center}
+.sv{font-size:22px;font-weight:800;line-height:1}.sl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-top:3px;color:var(--ink3)}
+.c1 .sv{color:var(--e)}.c2 .sv{color:var(--red)}.c3 .sv{color:var(--g)}
+.sth{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--ink3);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sth::after{content:'';flex:1;height:1px;background:var(--ink4)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{display:flex;align-items:center;gap:5px;padding:5px 11px 5px 8px;border-radius:50px;font-size:12px;font-weight:600;border:1.5px solid transparent}
+.chip.ok{background:var(--ep);color:var(--e);border-color:rgba(26,107,74,.2)}.chip.no{background:var(--redp);color:var(--red);border-color:rgba(192,57,43,.2)}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chip.ok .dot{background:var(--e)}.chip.no .dot{background:var(--red)}
+.plbl{font-size:11px;color:var(--ink3);font-weight:500;margin-bottom:4px}
+.pw{background:#e8f5ee;border-radius:50px;height:6px;overflow:hidden;margin-bottom:16px}
+.pb{height:100%;background:linear-gradient(90deg,var(--e),var(--el));border-radius:50px;transition:width .5s}
+.frow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.fbt{padding:5px 12px;border-radius:50px;border:1.5px solid var(--ink4);background:#fff;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;color:var(--ink3);transition:all .14s}
+.fbt.on{background:var(--e);border-color:var(--e);color:#fff}.fbt.gold.on{background:var(--g);border-color:var(--g);color:#fff}
+.hgrp{margin-bottom:16px}
+.hlbl{display:inline-flex;align-items:center;gap:5px;color:#fff;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;padding:4px 12px;border-radius:50px;margin-bottom:10px}
+.hlbl.sub{background:linear-gradient(90deg,var(--e),var(--el))}.hlbl.ash{background:linear-gradient(90deg,var(--g),var(--gl))}
+.card{background:#fff;border-radius:var(--r);padding:11px 13px;box-shadow:var(--sh);margin-bottom:8px;display:flex;align-items:center;gap:9px;border-left:3px solid transparent;animation:fup .3s ease both}
+.card.baru{border-left-color:var(--e)}.card.murojaah{border-left-color:var(--g)}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#fff}
+.av.baru{background:linear-gradient(135deg,var(--e),var(--el))}.av.murojaah{background:linear-gradient(135deg,var(--g),var(--gl))}
+.cb{flex:1;min-width:0}
+.ch{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:2px}
+.cn{font-size:13px;font-weight:700}
+.badge{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:50px}
+.badge.baru{background:var(--ep);color:var(--e)}.badge.murojaah{background:var(--gp);color:#9a7010}.badge.hal{background:#f0f0ea;color:var(--ink3)}
+.ct{font-size:11px;color:var(--ink2);font-weight:500}
+.ct em{font-family:'Amiri',serif;font-style:normal;font-size:13px;color:var(--e)}
+.apill{display:inline-block;margin-left:4px;font-size:10px;color:var(--ink3);background:var(--eu);padding:1px 6px;border-radius:50px;font-weight:500}
+.acts{display:flex;gap:3px;flex-shrink:0}
+.ibt{background:none;border:none;cursor:pointer;font-size:14px;padding:4px;border-radius:6px;color:var(--ink4)}
+.ibt.edit:hover{color:#2563eb;background:#eff6ff}.ibt.del:hover{color:var(--red);background:var(--redp)}
+.empty{text-align:center;padding:40px 20px;color:var(--ink3)}
+.belumbox{background:#fff8f7;border:1.5px dashed rgba(192,57,43,.3);border-radius:var(--r);padding:12px 14px;margin-top:8px}
+.belumbox h4{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.btags{display:flex;flex-wrap:wrap;gap:5px}
+.btag{background:#fff;border:1.5px solid rgba(192,57,43,.25);color:var(--red);font-size:11px;font-weight:600;padding:2px 9px;border-radius:50px}
+.hero{background:linear-gradient(135deg,var(--e),#0f4a33);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;position:relative;overflow:hidden}
+.hero h2{font-size:15px;font-weight:800;color:#fff;position:relative;z-index:1}
+.hero p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;font-weight:500;position:relative;z-index:1}
+.rkcard{background:#fff;border-radius:var(--r);padding:13px 14px;box-shadow:var(--sh);margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:transform .15s;position:relative;overflow:hidden}
+.rkcard:hover{transform:translateY(-2px)}
+.rkcard::after{content:'›';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--ink4)}
+.rkcard.g{border:2px solid var(--gl)}.rkcard.s{border:2px solid #c0c0c0}.rkcard.b{border:2px solid #cd7f32}
+.rkr{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;color:#fff}
+.r1{background:linear-gradient(135deg,#f59e0b,#fbbf24)}.r2{background:linear-gradient(135deg,#9ca3af,#d1d5db)}.r3{background:linear-gradient(135deg,#b45309,#d97706)}.rn{background:linear-gradient(135deg,var(--e),var(--el))}
+.rkb{flex:1;min-width:0;padding-right:20px}
+.rkn{font-size:13px;font-weight:800;margin-bottom:3px}
+.rktags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+.rktag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px}
+.rktag.b{background:var(--ep);color:var(--e)}.rktag.m{background:var(--gp);color:#9a7010}.rktag.d{background:#f0f0ea;color:var(--ink3)}
+.rkbar{background:#e8f5ee;border-radius:50px;height:5px;overflow:hidden;margin-top:3px}
+.rkbar span{display:block;height:100%;background:linear-gradient(90deg,var(--e),var(--el));border-radius:50px;transition:width .5s}
+.tbar-info{display:flex;justify-content:space-between;font-size:9px;font-weight:600;color:var(--ink3);margin-bottom:2px}
+.tbar{background:#f0ece4;border-radius:50px;height:5px;overflow:hidden}
+.tbar span{display:block;height:100%;border-radius:50px;transition:width .5s}
+.tbar .done{background:linear-gradient(90deg,#059669,#10b981)}.tbar .prog{background:linear-gradient(90deg,var(--e),var(--el))}.tbar .low{background:linear-gradient(90deg,#f59e0b,var(--gl))}
+.rkt{text-align:right;flex-shrink:0;padding-right:20px}
+.rkt .tv{font-size:17px;font-weight:800;color:var(--e);line-height:1}
+.rkt .tl{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--ink3)}
+.rov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;overflow-y:auto;backdrop-filter:blur(4px)}
+.rov.on{display:block}
+.rbox{background:var(--cream);min-height:100vh;max-width:680px;margin:0 auto;padding:18px 14px 56px}
+.rhdr{background:linear-gradient(135deg,var(--e),#0f4a33);border-radius:var(--r);padding:18px;margin-bottom:14px;position:relative;overflow:hidden}
+.rav{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;position:relative;z-index:1}
+.rname{font-size:18px;font-weight:800;color:#fff;position:relative;z-index:1}
+.rsub{font-size:11px;color:rgba(255,255,255,.75);font-weight:600;position:relative;z-index:1;margin-top:1px}
+.rclose{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:2}
+.rsec{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);margin-bottom:10px}
+.rsecttl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--e);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.rsecttl::after{content:'';flex:1;height:1px;background:var(--ep)}
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:6px}
+.sbox{background:var(--eu);border-radius:var(--rs);padding:9px 11px;text-align:center}
+.sbox .bv{font-size:18px;font-weight:800;color:var(--e);line-height:1}
+.sbox .bl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;color:var(--ink3)}
+.pbox{background:linear-gradient(135deg,var(--e),var(--el));border-radius:var(--rs);padding:10px 12px;color:#fff;margin-bottom:7px}
+.pbox .pk{font-size:9px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:2px}
+.pbox .pv{font-size:14px;font-weight:800}
+.pbox .ps{font-size:10px;opacity:.8;margin-top:1px}
+.tach{background:linear-gradient(135deg,#059669,#10b981);border-radius:var(--r);padding:14px;text-align:center;color:#fff;margin-bottom:8px}
+.tach .ti{font-size:26px;margin-bottom:4px;display:block}
+.tach .tt{font-size:13px;font-weight:800}
+.tach .ts{font-size:10px;opacity:.85;margin-top:2px}
+.chart-o{overflow-x:auto;scrollbar-width:none}
+.chart-o::-webkit-scrollbar{display:none}
+.chart-i{display:flex;align-items:flex-end;gap:5px;height:80px;min-width:100%;padding:0 2px}
+.ccol{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px}
+.ccol .bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--el),var(--e));min-height:3px;transition:height .4s}
+.ccol .val{font-size:8px;font-weight:700;color:var(--e);white-space:nowrap}
+.ccol .lbl{font-size:8px;color:var(--ink3);font-weight:600;white-space:nowrap}
+.ptbl{width:100%;border-collapse:collapse;font-size:11px}
+.ptbl th{background:var(--eu);color:var(--e);font-size:9px;font-weight:700;text-transform:uppercase;padding:6px 7px;text-align:left}
+.ptbl td{padding:7px 7px;border-bottom:1px solid #f0ece4;vertical-align:middle}
+.ptbl tr:last-child td{border-bottom:none}
+.lapcard{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh);margin-bottom:12px;border-top:3px solid var(--e)}
+.lapcard.gold{border-top-color:var(--g)}
+.lapttl{font-size:13px;font-weight:700;color:var(--e);margin-bottom:12px}
+.lapcard.gold .lapttl{color:var(--g)}
+.selwrap{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.selg{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}
+.selg label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink3)}
+.selg select{padding:8px 10px;border:1.5px solid var(--ink4);border-radius:var(--rs);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:#fff;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a6f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btnp{background:var(--eu);color:var(--e);border:1.5px solid var(--ep);border-radius:var(--rs);padding:8px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.btnpdf{background:linear-gradient(135deg,var(--e),var(--el));color:#fff;border:none;border-radius:var(--rs);padding:8px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btnpdf.gold{background:linear-gradient(135deg,#a07820,var(--g))}
+.pvw{display:none;margin-top:12px;border:1.5px solid var(--ep);border-radius:var(--r);overflow:hidden}
+.pvw.on{display:block}
+.pvtop{background:var(--e);padding:8px 12px;display:flex;align-items:center;justify-content:space-between}
+.pvtop span{color:#fff;font-size:11px;font-weight:700}
+.pvtop button{background:var(--gl);border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer}
+.pvbody{background:#f9f7f3;padding:12px;max-height:480px;overflow-y:auto}
+.pdoc{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:#1a1a18}
+.pdoc-lh{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:2px solid var(--e);margin-bottom:8px}
+.pdoc-logo{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--e),var(--el));display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:16px;color:#fff;flex-shrink:0}
+.pdoc-org strong{font-size:12px;font-weight:800;color:var(--e);display:block}
+.pdoc-org span{font-size:9px;color:var(--ink3)}
+.pdoc-ar{font-family:'Amiri',serif;font-size:12px;color:var(--e);margin-left:auto}
+.pdoc-title{background:linear-gradient(135deg,var(--e),var(--el));color:#fff;text-align:center;padding:8px 14px;border-radius:7px;margin:6px 0 10px}
+.pdoc-title h3{font-size:11px;font-weight:800;text-transform:uppercase}
+.pdoc-title p{font-size:9px;opacity:.85;margin-top:1px}
+.pdoc-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}
+.pdoc-mi{background:var(--eu);border-radius:5px;padding:6px 8px}
+.pdoc-mi .k{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--e)}
+.pdoc-mi .v{font-size:11px;font-weight:700;margin-top:1px}
+.pdoc-srow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px}
+.pdoc-sb{border-radius:6px;padding:7px 5px;text-align:center}
+.pdoc-sb .sv{font-size:16px;font-weight:800;line-height:1}
+.pdoc-sb .sl{font-size:7px;font-weight:700;text-transform:uppercase;margin-top:2px;opacity:.75}
+.psb-g{background:var(--ep);color:var(--e)}.psb-y{background:var(--gp);color:#9a7010}.psb-r{background:var(--redp);color:var(--red)}.psb-n{background:#f0f0ea;color:var(--ink3)}
+.pdoc-sh{font-size:9px;font-weight:800;text-transform:uppercase;color:var(--e);border-left:3px solid var(--e);padding-left:6px;margin:12px 0 6px}
+.pdoc-tbl{width:100%;border-collapse:collapse;font-size:10px}
+.pdoc-tbl th{background:var(--e);color:#fff;font-size:8px;font-weight:700;text-transform:uppercase;padding:5px 6px;text-align:left}
+.pdoc-tbl td{padding:6px 6px;border-bottom:1px solid #f0ece4;vertical-align:middle}
+.pdoc-tbl tr:nth-child(even) td{background:var(--eu)}
+.pdoc-tbl tr:last-child td{border-bottom:none}
+.pt-b{background:var(--ep);color:var(--e);font-size:7px;font-weight:700;padding:1px 5px;border-radius:50px;white-space:nowrap}
+.pt-m{background:var(--gp);color:#9a7010;font-size:7px;font-weight:700;padding:1px 5px;border-radius:50px;white-space:nowrap}
+.pt-s{background:var(--eu);color:var(--e);font-size:7px;font-weight:600;padding:1px 5px;border-radius:4px}
+.pt-a{background:var(--gp);color:#9a7010;font-size:7px;font-weight:600;padding:1px 5px;border-radius:4px}
+.pt-ok{color:var(--e);font-weight:700;font-size:9px}.pt-no{color:var(--red);font-weight:700;font-size:9px}
+.dayblock{margin-bottom:12px}
+.dayhd{background:var(--eu);border-radius:5px;padding:5px 8px;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.dayhd .dd{font-size:10px;font-weight:800;color:var(--e)}.dayhd .dc{margin-left:auto;font-size:8px;font-weight:700;background:var(--e);color:#fff;padding:1px 6px;border-radius:50px}
+.pdoc-notes{border:1.5px dashed var(--ink4);border-radius:6px;padding:8px 10px;margin-top:12px}
+.pdoc-notes .nk{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.nl{border-bottom:1px solid var(--ink4);height:13px;margin-bottom:3px}
+.pdoc-ttd{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:16px}
+.ttdcell{text-align:center;padding:0 8px}
+.ttdlbl{font-size:8px;font-weight:600;color:var(--ink3);margin-bottom:32px}
+.ttdline{border-top:1.5px solid var(--ink);padding-top:3px;display:inline-block;min-width:90px;font-size:10px;font-weight:700}
+.ttdrole{font-size:8px;color:var(--ink3);margin-top:1px}
+.pdoc-ft{margin-top:10px;padding-top:6px;border-top:1px solid var(--ink4);display:flex;justify-content:space-between;font-size:7px;color:var(--ink3)}
+.sdb-card{background:#fff;border-radius:var(--r);padding:13px 14px;box-shadow:var(--sh);margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+.sdb-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--e),var(--el));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.sdb-b{flex:1;min-width:0}
+.sdb-n{font-size:13px;font-weight:800}
+.sdb-i{font-size:11px;color:var(--ink3);margin-top:1px}
+.sdb-p{font-size:11px;color:var(--e);font-weight:700;margin-top:2px}
+.fabrow{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;z-index:50}
+.fab{border:none;border-radius:50px;padding:10px 18px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 5px 18px rgba(0,0,0,.16);white-space:nowrap}
+.fab-main{background:linear-gradient(135deg,var(--e),var(--el));color:#fff}
+.fab-sec{background:#fff;color:var(--ink2);border:1.5px solid var(--ink4);font-size:11px}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.ov.on{display:flex}
+@media(min-width:600px){.ov{align-items:center;padding:20px}}
+.modal{background:var(--cream);border-radius:20px 20px 0 0;padding:22px 18px 30px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 -10px 50px rgba(0,0,0,.2);animation:sup .28s ease}
+@media(min-width:600px){.modal{border-radius:20px}}
+@keyframes sup{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.mttl{font-size:16px;font-weight:700;color:var(--e)}
+.msub{font-size:11px;color:var(--ink3);margin-top:2px;font-weight:500}
+.mclose{background:var(--ink4);border:none;width:27px;height:27px;border-radius:50%;cursor:pointer;font-size:14px;line-height:27px;text-align:center}
+.fg{display:grid;gap:11px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--e)}
+.fld input,.fld select{padding:9px 11px;border:1.5px solid var(--ink4);border-radius:var(--rs);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:#fff;outline:none;transition:all .15s;width:100%;-webkit-appearance:none;appearance:none}
+.fld input[type=number]{-webkit-appearance:auto;appearance:auto}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a6f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.fld input:focus,.fld select:focus{border-color:var(--e);box-shadow:0 0 0 3px rgba(26,107,74,.1)}
+.tip{font-size:10px;color:var(--ink3);background:var(--eu);padding:6px 9px;border-radius:var(--rs);line-height:1.5}
+.btsave{background:linear-gradient(135deg,var(--e),var(--el));color:#fff;border:none;border-radius:var(--rs);padding:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:2px}
+.confbox{background:var(--redp);border:1.5px solid rgba(192,57,43,.2);border-radius:var(--rs);padding:12px 14px;margin-bottom:12px;font-size:13px;font-weight:600;line-height:1.6;color:var(--ink2)}
+.brow{display:flex;gap:8px;justify-content:flex-end}
+.btd{background:var(--red);color:#fff;border:none;border-radius:var(--rs);padding:9px 18px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btc{background:var(--ink4);color:var(--ink);border:none;border-radius:var(--rs);padding:9px 18px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.toast{position:fixed;top:14px;left:50%;z-index:300;transform:translateX(-50%) translateY(-60px);background:var(--ink);color:#fff;font-size:12px;font-weight:600;padding:9px 20px;border-radius:50px;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:transform .28s ease;pointer-events:none;white-space:nowrap}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.prog-detail{background:var(--eu);border-radius:var(--rs);padding:10px 12px;margin-top:6px;font-size:11px}
+.prog-detail .pd-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.prog-detail .pd-lbl{color:var(--ink3);font-weight:600}
+.prog-detail .pd-val{color:var(--e);font-weight:800}
+@media(max-width:400px){.sv{font-size:19px}.fr2,.fr3{grid-template-columns:1fr}.pdoc-srow{grid-template-columns:repeat(2,1fr)}.pdoc-meta{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<div class="hi">
+<div class="ht">
+<div class="hico">☽</div>
+<div style="flex:1"><div class="htit">Tahfidz Tracker</div><div class="hsub">Halaqah Restu Bumi</div></div>
+<div class="har">حِفْظُ الْقُرْآن</div>
+</div>
+<div class="syncbar"><div class="sdot" id="sdot"></div><div class="sspin" id="sspin"></div><span id="stxt">Menghubungkan...</span></div>
+<div class="tabs">
+<button class="tab on" onclick="setTab('setor',this)">📋 Setor</button>
+<button class="tab" onclick="setTab('rekap',this)">🏆 Rekap</button>
+<button class="tab" onclick="setTab('laporan',this)">📄 Laporan</button>
+<button class="tab" onclick="setTab('santri',this)">👥 Santri</button>
+</div>
+</div>
+</header>
+<main>
+<div class="pg on" id="pg-setor">
+<div class="dnav" id="dateNav"></div>
+<div class="sr">
+<div class="sc c1"><div class="sv" id="cS">0</div><div class="sl">✔ Sudah Setor</div></div>
+<div class="sc c2"><div class="sv" id="cB">0</div><div class="sl">✗ Belum Setor</div></div>
+<div class="sc c3"><div class="sv" id="cT">0</div><div class="sl">📋 Total Sesi</div></div>
+</div>
+<div class="sth">Status Santri Hari Ini</div>
+<div class="chips" id="chipWrap"></div>
+<div class="plbl" id="progLbl"></div>
+<div class="pw"><div class="pb" id="progBar" style="width:0%"></div></div>
+<div class="frow">
+<button class="fbt on" onclick="setF('semua',this)">Semua</button>
+<button class="fbt gold" onclick="setF('murojaah',this)">Muroja'ah</button>
+<button class="fbt" onclick="setF('baru',this)">Hafalan Baru</button>
+<button class="fbt" onclick="setF('subuh',this)">Ba'da Shubuh</button>
+<button class="fbt" onclick="setF('ashar',this)">Ba'da Ashar</button>
+</div>
+<div id="sesBox"></div>
+<div id="belumBox"></div>
+</div>
+<div class="pg" id="pg-rekap">
+<div class="hero"><h2>🏆 Rekap & Peringkat</h2><p>Diurutkan berdasarkan baris hafalan baru · Tap nama untuk raport lengkap</p></div>
+<div id="rekapBox"></div>
+</div>
+<div class="pg" id="pg-laporan">
+<div class="hero"><h2>📄 Cetak Laporan Resmi</h2><p>Pratinjau lalu unduh PDF</p></div>
+<div class="lapcard">
+<div class="lapttl">🗓 Laporan Pekanan</div>
+<div class="selwrap"><div class="selg"><label>Pilih Pekan</label><select id="selPekan"></select></div></div>
+<div class="btnrow"><button class="btnp" onclick="doPreview('pekan')">👁 Pratinjau</button><button class="btnpdf" onclick="doPDF('pekan')">⬇ Unduh PDF</button></div>
+<div class="pvw" id="pvPekan"><div class="pvtop"><span>Pratinjau Pekanan</span><button onclick="doPDF('pekan')">⬇ PDF</button></div><div class="pvbody" id="pvPekanBody"></div></div>
+</div>
+<div class="lapcard gold">
+<div class="lapttl">📅 Laporan Bulanan</div>
+<div class="selwrap">
+<div class="selg"><label>Bulan</label><select id="selBulan"></select></div>
+<div class="selg"><label>Tahun</label><select id="selTahun"></select></div>
+</div>
+<div class="btnrow"><button class="btnp" onclick="doPreview('bulan')">👁 Pratinjau</button><button class="btnpdf gold" onclick="doPDF('bulan')">⬇ Unduh PDF</button></div>
+<div class="pvw" id="pvBulan"><div class="pvtop" style="background:var(--g)"><span>Pratinjau Bulanan</span><button onclick="doPDF('bulan')">⬇ PDF</button></div><div class="pvbody" id="pvBulanBody"></div></div>
+</div>
+</div>
+<div class="pg" id="pg-santri">
+<div class="hero"><h2>👥 Database Santri</h2><p>Kelola data, posisi & target hafalan per santri</p></div>
+<div id="santriDbBox"></div>
+<div style="height:14px"></div>
+<button onclick="openAddSantri()" style="width:100%;padding:11px;background:var(--eu);border:2px dashed var(--el);border-radius:var(--r);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--e);cursor:pointer">＋ Tambah Santri Baru</button>
+</div>
+</main>
+<div class="rov" id="rapOv"><div class="rbox" id="rapBox"></div></div>
+<div class="fabrow">
+<button class="fab fab-sec" onclick="openRK()">📊 Rekap Cepat</button>
+<button class="fab fab-main" onclick="openAdd()">＋ Tambah Setoran</button>
+</div>
+<div class="toast" id="toast"></div>
+<!-- MODAL SETORAN -->
+<div class="ov" id="ovAdd" onclick="closeOvOut(event,'ovAdd')">
+<div class="modal">
+<div class="mhdr"><div><div class="mttl" id="addTitle">Tambah Setoran</div><div class="msub">Catat hafalan santri</div></div><button class="mclose" onclick="closeOv('ovAdd')">✕</button></div>
+<div class="fg">
+<div class="fr2">
+<div class="fld"><label>Tanggal</label><input type="date" id="fTgl"></div>
+<div class="fld"><label>Waktu Halaqah</label><select id="fHal"><option value="subuh">Ba'da Shubuh</option><option value="ashar">Ba'da Ashar</option></select></div>
+</div>
+<div class="fr2">
+<div class="fld"><label>Nama Santri</label><select id="fNama"><option value="">— Pilih —</option></select></div>
+<div class="fld"><label>Kategori</label><select id="fKat"><option value="baru">Hafalan Baru</option><option value="murojaah">Muroja'ah</option></select></div>
+</div>
+<div class="fr2">
+<div class="fld"><label>Surah</label><input type="text" id="fSurah" placeholder="cth: Al-Baqarah" list="surahDL" autocomplete="off"><datalist id="surahDL"></datalist></div>
+<div class="fld"><label>Ayat</label><input type="text" id="fAyat" placeholder="cth: 1-15 atau Full"></div>
+</div>
+<div class="fr2">
+<div class="fld"><label>Surah Akhir <span style="font-weight:500;font-size:9px;color:var(--ink4)">(opsional)</span></label><input type="text" id="fSurah2" placeholder="jika lintas surah" list="surahDL2" autocomplete="off"><datalist id="surahDL2"></datalist></div>
+<div class="fld"><label>Ayat Akhir</label><input type="text" id="fAyat2" placeholder="cth: 1-5"></div>
+</div>
+<div class="fr2">
+<div class="fld"><label>Halaman Madinah</label><input type="number" id="fHalaman" placeholder="0" min="0"></div>
+<div class="fld"><label>Baris (0-14)</label><input type="number" id="fBaris" placeholder="0" min="0" max="14"></div>
+</div>
+<div class="tip">💡 <strong>Halaman + Baris dikumulatif otomatis.</strong> Misal setor 5 baris → isi Halaman: 0, Baris: 5. Besok setor 10 baris lagi → isi Halaman: 0, Baris: 10. Total jadi 1 halaman penuh!</div>
+<input type="hidden" id="fEditId">
+<button class="btsave" id="btnSave" onclick="submitSetor()">💾 Simpan Setoran</button>
+</div>
+</div>
+</div>
+<!-- MODAL HAPUS SETORAN -->
+<div class="ov" id="ovDel" onclick="closeOvOut(event,'ovDel')">
+<div class="modal" style="max-width:400px">
+<div class="mhdr"><div><div class="mttl">Hapus Setoran?</div></div><button class="mclose" onclick="closeOv('ovDel')">✕</button></div>
+<div class="confbox" id="delTxt"></div>
+<div class="brow"><button class="btc" onclick="closeOv('ovDel')">Batal</button><button class="btd" onclick="confirmDel()">Ya, Hapus</button></div>
+</div>
+</div>
+<!-- MODAL REKAP CEPAT -->
+<div class="ov" id="ovRK" onclick="closeOvOut(event,'ovRK')">
+<div class="modal"><div class="mhdr"><div><div class="mttl">Rekap Cepat</div><div class="msub">Total seluruh periode</div></div><button class="mclose" onclick="closeOv('ovRK')">✕</button></div><div id="rkModal"></div></div>
+</div>
+<!-- MODAL SANTRI -->
+<div class="ov" id="ovSantri" onclick="closeOvOut(event,'ovSantri')">
+<div class="modal">
+<div class="mhdr"><div><div class="mttl" id="santriTitle">Tambah Santri</div><div class="msub">Data & target hafalan</div></div><button class="mclose" onclick="closeOv('ovSantri')">✕</button></div>
+<div class="fg">
+<div class="fr2">
+<div class="fld"><label>Nama Santri</label><input type="text" id="sNama" placeholder="Nama lengkap"></div>
+<div class="fld"><label>Semester</label><input type="text" id="sSemester" placeholder="cth: 2025/2026 Genap"></div>
+</div>
+<!-- POSISI AWAL -->
+<div style="background:var(--eu);border-radius:var(--rs);padding:11px">
+<div style="font-size:11px;font-weight:700;color:var(--e);margin-bottom:8px">📍 Posisi Hafalan Saat Ini</div>
+<div class="fr3">
+<div class="fld"><label>Juz</label><input type="number" id="sPosisiJuz" placeholder="cth: 29" min="1" max="30"></div>
+<div class="fld"><label>Halaman</label><input type="number" id="sPosisiHal" placeholder="cth: 582" min="1" max="604"></div>
+<div class="fld"><label>Baris</label><input type="number" id="sPosisiBaris" placeholder="0" min="0" max="14"></div>
+</div>
+</div>
+<!-- TARGET -->
+<div style="background:var(--gp);border-radius:var(--rs);padding:11px">
+<div style="font-size:11px;font-weight:700;color:var(--g);margin-bottom:8px">🎯 Target Hafalan</div>
+<div class="fr2">
+<div class="fld"><label>Dari Surah</label><input type="text" id="sTargetDariSurah" placeholder="cth: Al-Baqarah" list="surahDL3" autocomplete="off"><datalist id="surahDL3"></datalist></div>
+<div class="fld"><label>Dari Ayat</label><input type="number" id="sTargetDariAyat" placeholder="cth: 1" min="1"></div>
+</div>
+<div class="fr2" style="margin-top:8px">
+<div class="fld"><label>Sampai Surah</label><input type="text" id="sTargetSampaiSurah" placeholder="cth: Ali Imran" list="surahDL4" autocomplete="off"><datalist id="surahDL4"></datalist></div>
+<div class="fld"><label>Sampai Ayat</label><input type="number" id="sTargetSampaiAyat" placeholder="cth: 200" min="1"></div>
+</div>
+<div id="targetPreview" style="margin-top:8px;display:none;background:#fff;border-radius:var(--rs);padding:8px 10px;font-size:11px;color:var(--e);font-weight:700"></div>
+</div>
+<input type="hidden" id="sEditId">
+<button class="btsave" onclick="submitSantri()">💾 Simpan Data Santri</button>
+</div>
+</div>
+</div>
+<!-- MODAL HAPUS SANTRI -->
+<div class="ov" id="ovDelSantri" onclick="closeOvOut(event,'ovDelSantri')">
+<div class="modal" style="max-width:400px">
+<div class="mhdr"><div><div class="mttl">Hapus Santri?</div></div><button class="mclose" onclick="closeOv('ovDelSantri')">✕</button></div>
+<div class="confbox" id="delSantriTxt"></div>
+<div class="brow"><button class="btc" onclick="closeOv('ovDelSantri')">Batal</button><button class="btd" onclick="confirmDelSantri()">Ya, Hapus</button></div>
+</div>
+</div>
+<script>
+// ══════════ FIREBASE ══════════
+var fbCfg={apiKey:"AIzaSyBmfVoLJW3-3ENu0PEK53zk7gE7rzxD0Zc",authDomain:"halaqah--restu.firebaseapp.com",projectId:"halaqah--restu",storageBucket:"halaqah--restu.firebasestorage.app",messagingSenderId:"647493083777",appId:"1:647493083777:web:4df779e686ba2905d3e380"};
+var db=null,FB=false;
+try{firebase.initializeApp(fbCfg);db=firebase.firestore();FB=true;}catch(e){console.warn(e);}
+
+// ══════════ QURAN DATA ══════════
+// [nama, total_ayat, hal_awal, baris_awal, total_baris_surah]
+var QD={
+  'Al-Fatihah':[7,1,1,7],'Al-Baqarah':[286,2,1,382],'Ali Imran':[200,51,1,200],
+  "An-Nisa'":[176,77,1,228],'Al-Maidah':[120,106,1,181],"Al-An'am":[165,128,1,202],
+  "Al-A'raf":[206,151,1,241],'Al-Anfal':[75,177,1,88],'At-Taubah':[129,187,1,131],
+  'Yunus':[109,208,1,109],'Hud':[123,221,1,123],'Yusuf':[111,235,1,111],
+  "Ar-Ra'd":[43,249,1,56],'Ibrahim':[52,255,1,52],'Al-Hijr':[99,262,1,55],
+  'An-Nahl':[128,267,1,128],"Al-Isra'":[111,282,1,111],'Al-Kahfi':[110,293,1,110],
+  'Maryam':[98,305,1,98],'Tha-Ha':[135,312,1,135],"Al-Anbiya'":[112,322,1,112],
+  'Al-Hajj':[78,332,1,100],"Al-Mu'minun":[118,342,1,118],'An-Nur':[64,350,1,100],
+  'Al-Furqan':[77,359,1,77],"Asy-Syu'ara'":[227,367,1,150],'An-Naml':[93,377,1,93],
+  'Al-Qashash':[88,385,1,118],'Al-Ankabut':[69,396,1,69],'Ar-Rum':[60,404,1,60],
+  'Luqman':[34,411,1,34],'As-Sajdah':[30,415,1,30],'Al-Ahzab':[73,418,1,110],
+  "Saba'":[54,428,1,54],'Fatir':[45,434,1,45],'Ya-Sin':[83,440,1,83],
+  'As-Shaffat':[182,446,1,182],'Shad':[88,453,1,60],'Az-Zumar':[75,458,1,120],
+  'Ghafir':[85,467,1,130],'Fusshilat':[54,477,1,100],'Asy-Syura':[53,483,1,89],
+  'Az-Zukhruf':[89,489,1,89],'Ad-Dukhan':[59,496,1,59],'Al-Jatsiyah':[37,499,1,55],
+  'Al-Ahqaf':[35,502,1,63],'Muhammad':[38,507,1,57],'Al-Fath':[29,511,1,58],
+  'Al-Hujurat':[18,515,1,30],'Qaf':[45,519,1,45],'Adz-Dzariyat':[60,523,1,60],
+  'Ath-Thur':[49,526,1,49],'An-Najm':[62,528,1,62],'Al-Qamar':[55,531,1,55],
+  'Ar-Rahman':[78,534,1,78],"Al-Waqi'ah":[96,537,1,96],'Al-Hadid':[29,541,1,73],
+  'Al-Mujadilah':[22,542,1,50],'Al-Hasyr':[24,545,1,50],'Al-Mumtahanah':[13,549,1,30],
+  "As-Shaf":[14,551,1,22],"Al-Jumu'ah":[11,553,1,18],'Al-Munafiqun':[11,554,1,20],
+  'At-Taghabun':[18,556,1,28],'At-Thalaq':[12,558,1,28],'At-Tahrim':[12,560,1,28],
+  'Al-Mulk':[30,562,1,45],'Al-Qalam':[52,564,1,35],'Al-Haqqah':[52,566,1,35],
+  "Al-Ma'arij":[44,568,1,30],'Nuh':[28,570,1,28],'Al-Jin':[28,572,1,28],
+  'Al-Muzzammil':[20,574,1,20],'Al-Muddatstsir':[56,575,1,28],'Al-Qiyamah':[40,577,1,22],
+  'Al-Insan':[31,578,1,28],'Al-Mursalat':[50,580,1,28],"An-Naba'":[40,582,1,28],
+  "An-Nazi'at":[46,583,1,28],"'Abasa":[42,585,1,22],'At-Takwir':[29,586,1,15],
+  'Al-Infithar':[19,587,1,10],'Al-Muthaffifin':[36,587,11,36],'Al-Insyiqaq':[25,589,1,15],
+  'Al-Buruj':[22,590,1,15],'At-Thariq':[17,591,1,10],"Al-A'la":[19,591,11,10],
+  'Al-Ghasyiyah':[26,592,1,15],'Al-Fajr':[30,593,1,22],'Al-Balad':[20,594,1,15],
+  'Asy-Syams':[15,595,1,10],'Al-Lail':[21,595,11,10],'Adh-Dhuha':[11,596,1,7],
+  'Asy-Syarh':[8,596,8,5],'At-Tin':[8,597,1,6],"Al-'Alaq":[19,597,7,10],
+  'Al-Qadr':[5,598,1,5],'Al-Bayyinah':[8,598,6,10],'Az-Zalzalah':[8,599,1,8],
+  "Al-'Adiyat":[11,599,9,8],"Al-Qari'ah":[11,600,1,8],'At-Takatsur':[8,600,9,7],
+  "Al-'Ashr":[3,601,1,3],'Al-Humazah':[9,601,4,6],'Al-Fil':[5,601,10,5],
+  'Quraisy':[4,602,1,4],"Al-Ma'un":[7,602,5,6],'Al-Kautsar':[3,602,11,3],
+  'Al-Kafirun':[6,603,1,6],'An-Nashr':[3,603,7,3],'Al-Masad':[5,603,10,5],
+  'Al-Ikhlas':[4,604,1,4],'Al-Falaq':[5,604,5,5],'An-Nas':[6,604,10,6]
+};
+
+var SL=Object.keys(QD);
+var BPH=15; // baris per halaman
+
+// Hitung total baris dari awal mushaf sampai surah:ayat tertentu
+function barисAbsolut(surah, ayat) {
+  var d = QD[surah];
+  if (!d) return 0;
+  var totalAyat = d[0], halAwal = d[1], barisAwal = d[2], totalBaris = d[3];
+  var barisPerAyat = totalBaris / totalAyat;
+  var barisAwalAbsolut = (halAwal - 1) * BPH + barisAwal;
+  // Estimasi baris dari awal surah sampai ayat tertentu
+  var barisOffset = Math.round((ayat - 1) * barisPerAyat);
+  return barisAwalAbsolut + barisOffset;
+}
+
+// Hitung total baris target dari surah+ayat awal ke surah+ayat akhir
+function hitungTargetBaris(surahDari, ayatDari, surahSampai, ayatSampai) {
+  if (!surahDari || !surahSampai) return 0;
+  var dari = barисAbsolut(surahDari, parseInt(ayatDari)||1);
+  var sampai = barисAbsolut(surahSampai, parseInt(ayatSampai)||1);
+  var d = QD[surahSampai];
+  if (d) {
+    // Tambahkan sisa baris ayat akhir
+    var bpa = d[3] / d[0];
+    sampai += Math.ceil(bpa);
+  }
+  return Math.max(0, sampai - dari);
+}
+
+function fmtHB(totalBaris) {
+  if (!totalBaris || totalBaris <= 0) return '-';
+  var hal = Math.floor(totalBaris / BPH);
+  var bar = totalBaris % BPH;
+  if (hal === 0) return bar + ' baris';
+  if (bar === 0) return hal + ' hal';
+  return hal + ' hal ' + bar + ' baris';
+}
+
+function pctStr(setor, target) {
+  if (!target) return '-';
+  var p = Math.min(100, Math.round(setor / target * 100));
+  return p + '%';
+}
+
+// ══════════ CONSTANTS ══════════
+var BN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+var HN=['Ahad','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+var LSS='hq_setor_v6',LSST='hq_santri_v6';
+
+// ══════════ SEED DATA ══════════
+var SEED=[
+  {id:'s1',tgl:'2026-04-09',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'murojaah',surah:'At-Tahrim',ayat:'1-12',surah2:'',ayat2:'',hal:0,baris:12},
+  {id:'s2',tgl:'2026-04-10',nama:'Ibrahim Hasan Ramadhan',halaqah:'subuh',kat:'baru',surah:'Al-Jatsiyah',ayat:'1-13',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s3',tgl:'2026-04-13',nama:'Muhammad Faiz Al Akbar',halaqah:'subuh',kat:'baru',surah:'Al-Ahzab',ayat:'44-50',surah2:'',ayat2:'',hal:0,baris:10},
+  {id:'s4',tgl:'2026-04-13',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'murojaah',surah:"Al-Jumu'ah",ayat:'1-11',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s5',tgl:'2026-04-13',nama:'Luqman',halaqah:'subuh',kat:'murojaah',surah:"Asy-Syu'ara'",ayat:'1-22',surah2:'',ayat2:'',hal:1,baris:5},
+  {id:'s6',tgl:'2026-04-13',nama:'Salman Baihaqi Hakim',halaqah:'ashar',kat:'baru',surah:"Saba'",ayat:'40-54',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s7',tgl:'2026-04-15',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'murojaah',surah:'At-Thalaq',ayat:'Full',surah2:'',ayat2:'',hal:2,baris:3},
+  {id:'s8',tgl:'2026-04-15',nama:'Luqman',halaqah:'subuh',kat:'murojaah',surah:"Asy-Syu'ara'",ayat:'23-44',surah2:'',ayat2:'',hal:1,baris:8},
+  {id:'s9',tgl:'2026-04-16',nama:'Muhammad Faiz Al Akbar',halaqah:'subuh',kat:'baru',surah:'Al-Ahzab',ayat:'51-54',surah2:'',ayat2:'',hal:0,baris:7},
+  {id:'s10',tgl:'2026-04-16',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'murojaah',surah:'Al-Hasyr',ayat:'1-9',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s11',tgl:'2026-04-16',nama:"Atha' Sava Nararya",halaqah:'ashar',kat:'baru',surah:"Asy-Syu'ara'",ayat:'1-10',surah2:'',ayat2:'',hal:1,baris:2},
+  {id:'s12',tgl:'2026-04-16',nama:'Luqman',halaqah:'ashar',kat:'baru',surah:'Ad-Dukhan',ayat:'1-18',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s13',tgl:'2026-04-17',nama:'Kevin Rahman Khadavi',halaqah:'subuh',kat:'murojaah',surah:'Al-Fatihah',ayat:'1-7',surah2:'Al-Baqarah',ayat2:'1-37',hal:2,baris:5},
+  {id:'s14',tgl:'2026-04-17',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'murojaah',surah:'Al-Hasyr',ayat:'Full',surah2:'',ayat2:'',hal:3,baris:0},
+  {id:'s15',tgl:'2026-04-17',nama:'Muhammad Faiz Al Akbar',halaqah:'ashar',kat:'baru',surah:'Al-Ahzab',ayat:'55-62',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s16',tgl:'2026-04-20',nama:'Ibrahim Hasan Ramadhan',halaqah:'subuh',kat:'baru',surah:'Al-Jatsiyah',ayat:'14-22',surah2:'',ayat2:'',hal:1,baris:3},
+  {id:'s17',tgl:'2026-04-20',nama:'Hegel Fawwaz Mufaddhol',halaqah:'subuh',kat:'baru',surah:'Al-Baqarah',ayat:'49-57',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s18',tgl:'2026-04-20',nama:'Salman Baihaqi Hakim',halaqah:'subuh',kat:'baru',surah:'Al-Ahzab',ayat:'1-6',surah2:'',ayat2:'',hal:0,baris:9},
+  {id:'s19',tgl:'2026-04-20',nama:"Atha' Sava Nararya",halaqah:'subuh',kat:'baru',surah:"Asy-Syu'ara'",ayat:'13-15',surah2:'',ayat2:'',hal:0,baris:4},
+  {id:'s20',tgl:'2026-04-20',nama:'Muhammad Faiz Al Akbar',halaqah:'subuh',kat:'baru',surah:'Al-Ahzab',ayat:'63-73',surah2:'',ayat2:'',hal:1,baris:5},
+  {id:'s21',tgl:'2026-04-20',nama:'Luqman',halaqah:'subuh',kat:'baru',surah:'Ad-Dukhan',ayat:'19-39',surah2:'',ayat2:'',hal:1,baris:8},
+  {id:'s22',tgl:'2026-04-20',nama:'Faisal Hafiszyah',halaqah:'subuh',kat:'baru',surah:'Al-Baqarah',ayat:'182-186',surah2:'',ayat2:'',hal:0,baris:7},
+  {id:'s23',tgl:'2026-04-20',nama:'Kevin Rahman Khadavi',halaqah:'ashar',kat:'murojaah',surah:'Al-Baqarah',ayat:'38-61',surah2:'',ayat2:'',hal:1,baris:10},
+  {id:'s24',tgl:'2026-04-20',nama:'Luqman',halaqah:'ashar',kat:'baru',surah:'Al-Baqarah',ayat:'25-37',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s25',tgl:'2026-04-21',nama:'Salman Baihaqi Hakim',halaqah:'subuh',kat:'baru',surah:'Al-Ahzab',ayat:'7-15',surah2:'',ayat2:'',hal:1,baris:3},
+  {id:'s26',tgl:'2026-04-21',nama:'Luqman',halaqah:'subuh',kat:'murojaah',surah:'Ad-Dukhan',ayat:'40-59',surah2:'',ayat2:'',hal:1,baris:7},
+  {id:'s27',tgl:'2026-04-21',nama:'Ibrahim Hasan Ramadhan',halaqah:'subuh',kat:'baru',surah:'Al-Jatsiyah',ayat:'23-27',surah2:'',ayat2:'',hal:0,baris:6},
+  {id:'s28',tgl:'2026-04-21',nama:'Alifqy Jati Raharjo',halaqah:'subuh',kat:'baru',surah:'Az-Zumar',ayat:'32-40',surah2:'',ayat2:'',hal:1,baris:2},
+  {id:'s29',tgl:'2026-04-21',nama:'Muhammad Faiz Al Akbar',halaqah:'subuh',kat:'murojaah',surah:'Al-Ahzab',ayat:'1-15',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s30',tgl:'2026-04-21',nama:'Kevin Rahman Khadavi',halaqah:'subuh',kat:'murojaah',surah:'Al-Baqarah',ayat:'63-83',surah2:'',ayat2:'',hal:1,baris:8},
+  {id:'s31',tgl:'2026-04-21',nama:"Atha' Sava Nararya",halaqah:'subuh',kat:'murojaah',surah:"Asy-Syu'ara'",ayat:'1-18',surah2:'',ayat2:'',hal:1,baris:5},
+  {id:'s32',tgl:'2026-04-21',nama:'Ibrahim Hasan Ramadhan',halaqah:'ashar',kat:'baru',surah:'Al-Fath',ayat:'26-28',surah2:'',ayat2:'',hal:0,baris:4},
+  {id:'s33',tgl:'2026-04-22',nama:'Ibrahim Hasan Ramadhan',halaqah:'subuh',kat:'baru',surah:'Al-Jatsiyah',ayat:'28-37',surah2:'',ayat2:'',hal:1,baris:0},
+  {id:'s34',tgl:'2026-04-22',nama:"Atha' Sava Nararya",halaqah:'subuh',kat:'baru',surah:"Asy-Syu'ara'",ayat:'16-19',surah2:'',ayat2:'',hal:0,baris:5}
+];
+
+var SEED_ST=[
+  {id:'st1',nama:'Faisal Hafiszyah',semester:'2025/2026 Genap',posisiJuz:29,posisiHal:560,posisiBaris:0,targetDariSurah:'At-Tahrim',targetDariAyat:1,targetSampaiSurah:'An-Nas',targetSampaiAyat:6},
+  {id:'st2',nama:'Kevin Rahman Khadavi',semester:'2025/2026 Genap',posisiJuz:1,posisiHal:2,posisiBaris:0,targetDariSurah:'Al-Fatihah',targetDariAyat:1,targetSampaiSurah:'Al-Baqarah',targetSampaiAyat:286},
+  {id:'st3',nama:'Luqman',semester:'2025/2026 Genap',posisiJuz:19,posisiHal:367,posisiBaris:0,targetDariSurah:"Asy-Syu'ara'",targetDariAyat:1,targetSampaiSurah:'Ad-Dukhan',targetSampaiAyat:59},
+  {id:'st4',nama:"Atha' Sava Nararya",semester:'2025/2026 Genap',posisiJuz:19,posisiHal:367,posisiBaris:0,targetDariSurah:"Asy-Syu'ara'",targetDariAyat:1,targetSampaiSurah:'An-Naml',targetSampaiAyat:93},
+  {id:'st5',nama:'Hegel Fawwaz Mufaddhol',semester:'2025/2026 Genap',posisiJuz:1,posisiHal:2,posisiBaris:0,targetDariSurah:'Al-Baqarah',targetDariAyat:1,targetSampaiSurah:'Ali Imran',targetSampaiAyat:200},
+  {id:'st6',nama:'Ibrahim Hasan Ramadhan',semester:'2025/2026 Genap',posisiJuz:26,posisiHal:499,posisiBaris:0,targetDariSurah:'Al-Jatsiyah',targetDariAyat:1,targetSampaiSurah:'Al-Fath',targetSampaiAyat:29},
+  {id:'st7',nama:'Muhammad Faiz Al Akbar',semester:'2025/2026 Genap',posisiJuz:22,posisiHal:418,posisiBaris:0,targetDariSurah:'Al-Ahzab',targetDariAyat:1,targetSampaiSurah:'Ya-Sin',targetSampaiAyat:83},
+  {id:'st8',nama:'Salman Baihaqi Hakim',semester:'2025/2026 Genap',posisiJuz:22,posisiHal:418,posisiBaris:0,targetDariSurah:'Al-Ahzab',targetDariAyat:1,targetSampaiSurah:'Az-Zumar',targetSampaiAyat:75},
+  {id:'st9',nama:'Alifqy Jati Raharjo',semester:'2025/2026 Genap',posisiJuz:23,posisiHal:458,posisiBaris:0,targetDariSurah:'Az-Zumar',targetDariAyat:1,targetSampaiSurah:'Ghafir',targetSampaiAyat:85}
+];
+
+// ══════════ STATE ══════════
+var DATA=[],STDB=[],aDate=null,aFilter='semua',pendDel=null,pendDelS=null;
+
+// ══════════ HELPERS ══════════
+function uid(){return'x'+Date.now()+Math.random().toString(36).slice(2,5);}
+function today(){return new Date().toISOString().slice(0,10);}
+function udates(){var d={};DATA.forEach(function(x){d[x.tgl]=true;});return Object.keys(d).sort();}
+function fs(iso){if(!iso)return'';var p=iso.split('-');return parseInt(p[2])+' '+BN[parseInt(p[1])-1].slice(0,3);}
+function ff(iso){if(!iso)return'';var dt=new Date(iso+'T00:00:00');return HN[dt.getDay()]+', '+dt.getDate()+' '+BN[dt.getMonth()]+' '+dt.getFullYear();}
+function gMon(iso){var d=new Date(iso+'T00:00:00'),day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return d.toISOString().slice(0,10);}
+function gSun(mon){var d=new Date(mon+'T00:00:00');d.setDate(d.getDate()+6);return d.toISOString().slice(0,10);}
+
+// Total baris hafalan baru santri
+function getTotalBarisBaru(nama){
+  return DATA.filter(function(d){return d.nama===nama&&d.kat==='baru';})
+    .reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0);
+}
+
+// Posisi terkini = posisi awal + total baris baru
+function getPosisiTerkini(sd){
+  if(!sd)return{juz:0,hal:0,baris:0};
+  var awal=(parseInt(sd.posisiHal)||1-1)*BPH+(parseInt(sd.posisiBaris)||0);
+  var tam=getTotalBarisBaru(sd.nama);
+  var total=awal+tam;
+  var hal=Math.floor(total/BPH)+1;
+  var bar=total%BPH;
+  return{hal:Math.min(hal,604),baris:bar};
+}
+
+// Target baris dari data santri
+function getTargetBaris(sd){
+  if(!sd||!sd.targetDariSurah||!sd.targetSampaiSurah)return 0;
+  return hitungTargetBaris(sd.targetDariSurah,sd.targetDariAyat,sd.targetSampaiSurah,sd.targetSampaiAyat);
+}
+
+function gNames(){return STDB.filter(function(s){return s.nama;}).map(function(s){return s.nama;}).sort();}
+function gSD(nama){for(var i=0;i<STDB.length;i++)if(STDB[i].nama===nama)return STDB[i];return null;}
+function svL(){try{localStorage.setItem(LSS,JSON.stringify(DATA));}catch(e){}try{localStorage.setItem(LSST,JSON.stringify(STDB));}catch(e){}}
+
+// ══════════ SYNC UI ══════════
+function setSUI(mode,msg){
+  var dot=document.getElementById('sdot'),spin=document.getElementById('sspin'),txt=document.getElementById('stxt');
+  dot.className='sdot';spin.className='sspin';
+  if(mode==='live'){dot.classList.add('live');txt.textContent=msg||'🟢 Live — data sinkron otomatis';}
+  else if(mode==='local'){dot.classList.add('local');txt.textContent=msg||'🟡 Mode lokal';}
+  else if(mode==='loading'){spin.classList.add('on');txt.textContent=msg||'Menghubungkan...';}
+  else{dot.classList.add('err');txt.textContent=msg||'⚠ Gagal tersambung';}
+}
+
+// ══════════ FIREBASE ══════════
+function startFB(){
+  setSUI('loading');
+  try{
+    var cS=db.collection('setoran'),cST=db.collection('santri');
+    cS.get().then(function(snap){
+      if(snap.empty){var bt=db.batch();SEED.forEach(function(s){bt.set(cS.doc(s.id),s);});return bt.commit();}
+    }).catch(function(e){console.warn(e);});
+    cST.get().then(function(snap){
+      if(snap.empty){var bt2=db.batch();SEED_ST.forEach(function(s){bt2.set(cST.doc(s.id),s);});return bt2.commit();}
+    }).catch(function(e){console.warn(e);});
+    cS.onSnapshot(function(snap){
+      DATA=[];snap.forEach(function(d){DATA.push(Object.assign({},d.data(),{id:d.id}));});
+      DATA.sort(function(a,b){return a.tgl.localeCompare(b.tgl);});
+      svL();if(!aDate){var d=udates();aDate=d.length?d[d.length-1]:today();}
+      rbNS();bNav();rDay();bSel();
+      if(document.getElementById('pg-rekap').classList.contains('on'))bRekap();
+      setSUI('live');
+    },function(e){console.error(e);setSUI('err');startLocal();});
+    cST.onSnapshot(function(snap){
+      STDB=[];snap.forEach(function(d){STDB.push(Object.assign({},d.data(),{id:d.id}));});
+      STDB=STDB.filter(function(s){return s&&s.nama;});
+      svL();rbNS();
+      if(document.getElementById('pg-santri').classList.contains('on'))bSDB();
+      if(document.getElementById('pg-rekap').classList.contains('on'))bRekap();
+    },function(e){console.warn(e);});
+  }catch(e){console.error(e);startLocal();}
+}
+
+function startLocal(){
+  setSUI('local');
+  try{var r=localStorage.getItem(LSS);if(r)DATA=JSON.parse(r);}catch(e){}
+  try{var r2=localStorage.getItem(LSST);if(r2)STDB=JSON.parse(r2);}catch(e){}
+  if(!DATA.length){DATA=SEED.slice();svL();}
+  if(!STDB.length){STDB=SEED_ST.slice();svL();}
+  STDB=STDB.filter(function(s){return s&&s.nama;});
+  var d=udates();aDate=d.length?d[d.length-1]:today();
+  rbNS();bNav();rDay();bSel();
+}
+
+// ══════════ INIT ══════════
+window.addEventListener('DOMContentLoaded',function(){
+  ['surahDL','surahDL2','surahDL3','surahDL4'].forEach(function(id){
+    var dl=document.getElementById(id);
+    SL.forEach(function(s){var o=document.createElement('option');o.value=s;dl.appendChild(o);});
+  });
+  document.getElementById('fTgl').value=today();
+  // Preview target saat input santri berubah
+  ['sTargetDariSurah','sTargetDariAyat','sTargetSampaiSurah','sTargetSampaiAyat'].forEach(function(id){
+    document.getElementById(id).addEventListener('input',updateTargetPreview);
+  });
+  if(FB&&db)startFB();else startLocal();
+});
+
+function updateTargetPreview(){
+  var ds=document.getElementById('sTargetDariSurah').value;
+  var da=document.getElementById('sTargetDariAyat').value;
+  var ss=document.getElementById('sTargetSampaiSurah').value;
+  var sa=document.getElementById('sTargetSampaiAyat').value;
+  var pv=document.getElementById('targetPreview');
+  if(ds&&ss){
+    var total=hitungTargetBaris(ds,da||1,ss,sa||1);
+    var hal=Math.floor(total/BPH),bar=total%BPH;
+    pv.style.display='block';
+    pv.textContent='🎯 Total target: '+fmtHB(total)+' ('+hal+' hal '+(bar?bar+' baris':'')+')';
+  }else{pv.style.display='none';}
+}
+
+function rbNS(){
+  var names=gNames(),sel=document.getElementById('fNama'),cur=sel.value;
+  sel.innerHTML='<option value="">— Pilih —</option>';
+  names.forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+  if(cur)sel.value=cur;
+}
+
+// ══════════ TABS ══════════
+function setTab(id,el){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('pg-'+id).classList.add('on');el.classList.add('on');
+  if(id==='rekap')bRekap();
+  if(id==='laporan')bSel();
+  if(id==='santri')bSDB();
+}
+
+// ══════════ NAV + FILTER ══════════
+function bNav(){
+  var nav=document.getElementById('dateNav');nav.innerHTML='';
+  udates().forEach(function(iso){
+    var b=document.createElement('button');b.className='dbt'+(iso===aDate?' on':'');
+    b.textContent=fs(iso);b.onclick=function(){aDate=iso;bNav();rDay();};nav.appendChild(b);
+  });
+}
+function setF(f,el){aFilter=f;document.querySelectorAll('.fbt').forEach(function(b){b.classList.remove('on');});el.classList.add('on');rDay();}
+
+// ══════════ RENDER DAY ══════════
+function rDay(){
+  var names=gNames(),sh=DATA.filter(function(d){return d.tgl===aDate;}),sudah=[],belum=[];
+  sh.forEach(function(d){if(d.nama&&sudah.indexOf(d.nama)<0)sudah.push(d.nama);});
+  belum=names.filter(function(n){return sudah.indexOf(n)<0;});
+  document.getElementById('cS').textContent=sudah.length;
+  document.getElementById('cB').textContent=belum.length;
+  document.getElementById('cT').textContent=sh.length;
+  var pct=names.length?Math.round(sudah.length/names.length*100):0;
+  document.getElementById('progBar').style.width=pct+'%';
+  document.getElementById('progLbl').textContent='Progress: '+sudah.length+'/'+names.length+' santri sudah setor ('+pct+'%)';
+  var cw=document.getElementById('chipWrap');cw.innerHTML='';
+  names.forEach(function(n){var ok=sudah.indexOf(n)>=0;var c=document.createElement('div');c.className='chip '+(ok?'ok':'no');c.innerHTML='<span class="dot"></span>'+n;cw.appendChild(c);});
+  var fl=sh;
+  if(aFilter==='baru')fl=sh.filter(function(d){return d.kat==='baru';});
+  if(aFilter==='murojaah')fl=sh.filter(function(d){return d.kat==='murojaah';});
+  if(aFilter==='subuh')fl=sh.filter(function(d){return d.halaqah==='subuh';});
+  if(aFilter==='ashar')fl=sh.filter(function(d){return d.halaqah==='ashar';});
+  var sub=fl.filter(function(d){return d.halaqah==='subuh';}),ash=fl.filter(function(d){return d.halaqah==='ashar';});
+  var box=document.getElementById('sesBox');box.innerHTML='';
+  if(!aDate||sh.length===0)box.innerHTML='<div class="empty"><p>Belum ada setoran. Klik <strong>＋ Tambah Setoran</strong>.</p></div>';
+  else if(fl.length===0)box.innerHTML='<div class="empty"><p>Tidak ada sesi dengan filter ini.</p></div>';
+  else{
+    if(sub.length){var g=document.createElement('div');g.className='hgrp';g.innerHTML="<div class='hlbl sub'>🌅 Ba'da Shubuh</div>";sub.forEach(function(s,i){g.appendChild(mkCard(s,i));});box.appendChild(g);}
+    if(ash.length){var g2=document.createElement('div');g2.className='hgrp';g2.innerHTML="<div class='hlbl ash'>🌤️ Ba'da Ashar</div>";ash.forEach(function(s,i){g2.appendChild(mkCard(s,i));});box.appendChild(g2);}
+  }
+  var bb=document.getElementById('belumBox');
+  if(aDate&&belum.length>0)bb.innerHTML='<div class="belumbox"><h4>⚠ Belum Setor Hari Ini</h4><div class="btags">'+belum.map(function(n){return'<span class="btag">'+n+'</span>';}).join('')+'</div></div>';
+  else if(aDate&&sh.length>0)bb.innerHTML='<div style="text-align:center;padding:12px;color:var(--e);font-weight:700;font-size:13px">🎉 Alhamdulillah! Semua santri sudah setor hari ini.</div>';
+  else bb.innerHTML='';
+}
+
+function mkCard(s,idx){
+  var c=document.createElement('div');c.className='card '+s.kat;c.style.animationDelay=(idx*.04)+'s';
+  var ini=(s.nama||'?').replace(/[^a-zA-Z]/g,'').substring(0,2).toUpperCase();
+  var lbl=s.kat==='baru'?'Hafalan Baru':"Muroja'ah";
+  var totalB=(parseInt(s.hal)||0)*BPH+(parseInt(s.baris)||0);
+  var hb=fmtHB(totalB);
+  var st=s.surah2?(s.surah+' '+s.ayat+' → '+s.surah2+' '+s.ayat2):s.surah;
+  var at=s.surah2?'':('Ayat '+s.ayat);
+  var sid=s.id.replace(/'/g,"\\'"),sn=(s.nama||'').replace(/'/g,"\\'"),ss=(s.surah||'').replace(/'/g,"\\'");
+  c.innerHTML='<div class="av '+s.kat+'">'+ini+'</div><div class="cb"><div class="ch"><span class="cn">'+(s.nama||'')+'</span><span class="badge '+s.kat+'">'+lbl+'</span>'+(hb!=='-'?'<span class="badge hal">'+hb+'</span>':'')+'</div><div class="ct"><em>'+st+'</em>'+(at?'<span class="apill">'+at+'</span>':'')+'</div></div><div class="acts"><button class="ibt edit" onclick="openEdit(\''+sid+'\')" title="Edit">✏️</button><button class="ibt del" onclick="askDel(\''+sid+'\',\''+sn+'\',\''+ss+'\')" title="Hapus">🗑</button></div>';
+  return c;
+}
+
+// ══════════ SETORAN ══════════
+function openAdd(){
+  document.getElementById('addTitle').textContent='Tambah Setoran';
+  document.getElementById('fEditId').value='';document.getElementById('fTgl').value=aDate||today();
+  document.getElementById('fNama').value='';document.getElementById('fKat').value='baru';
+  document.getElementById('fSurah').value='';document.getElementById('fAyat').value='';
+  document.getElementById('fSurah2').value='';document.getElementById('fAyat2').value='';
+  document.getElementById('fHalaman').value='0';document.getElementById('fBaris').value='0';
+  document.getElementById('btnSave').textContent='💾 Simpan Setoran';openOv('ovAdd');
+}
+function openEdit(id){
+  var s=null;for(var i=0;i<DATA.length;i++)if(DATA[i].id===id){s=DATA[i];break;}if(!s)return;
+  document.getElementById('addTitle').textContent='Edit Setoran';
+  document.getElementById('fEditId').value=id;document.getElementById('fTgl').value=s.tgl;
+  document.getElementById('fHal').value=s.halaqah;document.getElementById('fNama').value=s.nama;
+  document.getElementById('fKat').value=s.kat;document.getElementById('fSurah').value=s.surah;
+  document.getElementById('fAyat').value=s.ayat;document.getElementById('fSurah2').value=s.surah2||'';
+  document.getElementById('fAyat2').value=s.ayat2||'';document.getElementById('fHalaman').value=s.hal||0;
+  document.getElementById('fBaris').value=s.baris||0;
+  document.getElementById('btnSave').textContent='✏️ Simpan Perubahan';openOv('ovAdd');
+}
+function submitSetor(){
+  var editId=document.getElementById('fEditId').value,tgl=document.getElementById('fTgl').value.trim(),
+    halaqah=document.getElementById('fHal').value,nama=document.getElementById('fNama').value,
+    kat=document.getElementById('fKat').value,surah=document.getElementById('fSurah').value.trim(),
+    ayat=document.getElementById('fAyat').value.trim(),surah2=document.getElementById('fSurah2').value.trim(),
+    ayat2=document.getElementById('fAyat2').value.trim(),hal=parseInt(document.getElementById('fHalaman').value)||0,
+    baris=parseInt(document.getElementById('fBaris').value)||0;
+  if(!tgl){toast('⚠ Pilih tanggal.');return;}if(!nama){toast('⚠ Pilih nama santri.');return;}
+  if(!surah){toast('⚠ Isi nama surah.');return;}if(!ayat){toast('⚠ Isi ayat.');return;}
+  var entry={id:editId||uid(),tgl:tgl,halaqah:halaqah,nama:nama,kat:kat,surah:surah,ayat:ayat,surah2:surah2,ayat2:ayat2,hal:hal,baris:baris};
+  closeOv('ovAdd');
+  if(FB&&db)db.collection('setoran').doc(entry.id).set(entry).then(function(){aDate=tgl;toast(editId?'✏️ Setoran diperbarui!':'✔ Setoran '+nama+' tersimpan!');}).catch(function(e){toast('⚠ '+e.message);});
+  else{if(editId){for(var i=0;i<DATA.length;i++)if(DATA[i].id===editId){DATA[i]=entry;break;}}else DATA.push(entry);DATA.sort(function(a,b){return a.tgl.localeCompare(b.tgl);});svL();aDate=tgl;bNav();rDay();bSel();toast(editId?'✏️ Setoran diperbarui!':'✔ Setoran '+nama+' tersimpan!');}
+}
+function askDel(id,nama,surah){pendDel=id;document.getElementById('delTxt').innerHTML='Hapus setoran <strong>'+nama+'</strong> — '+surah+'?';openOv('ovDel');}
+function confirmDel(){if(!pendDel)return;var id=pendDel;pendDel=null;closeOv('ovDel');if(FB&&db)db.collection('setoran').doc(id).delete().then(function(){toast('🗑 Setoran dihapus.');}).catch(function(e){toast('⚠ '+e.message);});else{DATA=DATA.filter(function(d){return d.id!==id;});svL();bNav();rDay();bSel();toast('🗑 Setoran dihapus.');}}
+
+// ══════════ SANTRI DB ══════════
+function bSDB(){
+  var box=document.getElementById('santriDbBox');
+  if(!STDB.length){box.innerHTML='<div class="empty"><p>Belum ada santri. Tap tombol di bawah.</p></div>';return;}
+  var sorted=STDB.slice().sort(function(a,b){return a.nama.localeCompare(b.nama);});
+  box.innerHTML=sorted.map(function(s){
+    var tgB=getTargetBaris(s),totB=getTotalBarisBaru(s.nama),pct=tgB?Math.min(100,Math.round(totB/tgB*100)):0;
+    var pos=getPosisiTerkini(s);
+    var tgStr=s.targetDariSurah?s.targetDariSurah+(s.targetDariAyat?' ayat '+s.targetDariAyat:'')+'→'+s.targetSampaiSurah+(s.targetSampaiAyat?' ayat '+s.targetSampaiAyat:''):'Belum diset';
+    return'<div class="sdb-card"><div class="sdb-av">'+s.nama.substring(0,2).toUpperCase()+'</div><div class="sdb-b"><div class="sdb-n">'+s.nama+'</div><div class="sdb-i">Semester: '+(s.semester||'-')+(s.posisiJuz?' · Juz '+s.posisiJuz:'')+'</div><div class="sdb-p">📍 Posisi awal: Hal '+(s.posisiHal||'?')+' baris '+(s.posisiBaris||0)+' · Terkini: Hal '+pos.hal+' baris '+pos.baris+'</div>'+(tgB?'<div style="margin-top:5px"><div class="tbar-info"><span>🎯 '+tgStr+'</span><span>'+pct+'% ('+fmtHB(totB)+'/'+fmtHB(tgB)+')</span></div><div class="tbar"><span class="'+(pct>=100?'done':pct>=50?'prog':'low')+'" style="width:'+pct+'%"></span></div></div>':'')+'</div><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button class="ibt edit" onclick="openEditS(\''+s.id+'\')">✏️</button><button class="ibt del" onclick="askDelS(\''+s.id+'\',\''+s.nama.replace(/'/g,"\\'")+'\')">🗑</button></div></div>';
+  }).join('');
+}
+
+function openAddSantri(){
+  document.getElementById('santriTitle').textContent='Tambah Santri';document.getElementById('sEditId').value='';
+  ['sNama','sSemester','sTargetDariSurah','sTargetSampaiSurah'].forEach(function(id){document.getElementById(id).value='';});
+  ['sPosisiJuz','sPosisiHal','sPosisiBaris','sTargetDariAyat','sTargetSampaiAyat'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('targetPreview').style.display='none';
+  openOv('ovSantri');
+}
+function openEditS(id){
+  var s=null;for(var i=0;i<STDB.length;i++)if(STDB[i].id===id){s=STDB[i];break;}if(!s)return;
+  document.getElementById('santriTitle').textContent='Edit Data Santri';
+  document.getElementById('sEditId').value=id;document.getElementById('sNama').value=s.nama||'';
+  document.getElementById('sSemester').value=s.semester||'';document.getElementById('sPosisiJuz').value=s.posisiJuz||'';
+  document.getElementById('sPosisiHal').value=s.posisiHal||'';document.getElementById('sPosisiBaris').value=s.posisiBaris||0;
+  document.getElementById('sTargetDariSurah').value=s.targetDariSurah||'';document.getElementById('sTargetDariAyat').value=s.targetDariAyat||'';
+  document.getElementById('sTargetSampaiSurah').value=s.targetSampaiSurah||'';document.getElementById('sTargetSampaiAyat').value=s.targetSampaiAyat||'';
+  updateTargetPreview();openOv('ovSantri');
+}
+function submitSantri(){
+  var editId=document.getElementById('sEditId').value,nama=document.getElementById('sNama').value.trim();
+  if(!nama){toast('⚠ Isi nama santri.');return;}
+  var entry={id:editId||uid(),nama:nama,semester:document.getElementById('sSemester').value.trim(),
+    posisiJuz:parseInt(document.getElementById('sPosisiJuz').value)||0,
+    posisiHal:parseInt(document.getElementById('sPosisiHal').value)||1,
+    posisiBaris:parseInt(document.getElementById('sPosisiBaris').value)||0,
+    targetDariSurah:document.getElementById('sTargetDariSurah').value.trim(),
+    targetDariAyat:parseInt(document.getElementById('sTargetDariAyat').value)||1,
+    targetSampaiSurah:document.getElementById('sTargetSampaiSurah').value.trim(),
+    targetSampaiAyat:parseInt(document.getElementById('sTargetSampaiAyat').value)||1};
+  closeOv('ovSantri');
+  if(FB&&db)db.collection('santri').doc(entry.id).set(entry).then(function(){toast('✔ Data '+nama+' disimpan!');}).catch(function(e){toast('⚠ '+e.message);});
+  else{if(editId){for(var i=0;i<STDB.length;i++)if(STDB[i].id===editId){STDB[i]=entry;break;}}else STDB.push(entry);svL();rbNS();bSDB();toast('✔ Data '+nama+' disimpan!');}
+}
+function askDelS(id,nama){pendDelS=id;document.getElementById('delSantriTxt').innerHTML='Hapus santri <strong>'+nama+'</strong>?';openOv('ovDelSantri');}
+function confirmDelSantri(){if(!pendDelS)return;var id=pendDelS;pendDelS=null;closeOv('ovDelSantri');if(FB&&db)db.collection('santri').doc(id).delete().then(function(){toast('🗑 Santri dihapus.');}).catch(function(e){toast('⚠ '+e.message);});else{STDB=STDB.filter(function(s){return s.id!==id;});svL();rbNS();bSDB();toast('🗑 Santri dihapus.');}}
+function askDelSFromR(id,nama){closeRaport();pendDelS=id;document.getElementById('delSantriTxt').innerHTML='Hapus santri <strong>'+nama+'</strong>?';openOv('ovDelSantri');}
+
+// ══════════ REKAP ══════════
+function bRekap(){
+  var names=gNames();
+  if(!names.length){document.getElementById('rekapBox').innerHTML='<div class="empty"><p>Belum ada santri. Isi tab 👥 Santri dulu.</p></div>';return;}
+  var stats=names.map(function(n){
+    var myD=DATA.filter(function(d){return d.nama===n;}),baruD=myD.filter(function(d){return d.kat==='baru';});
+    var totB=baruD.reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0);
+    var sd=gSD(n),tgB=getTargetBaris(sd),pctT=tgB?Math.min(100,Math.round(totB/tgB*100)):0;
+    var days={};myD.forEach(function(d){days[d.tgl]=true;});
+    return{n:n,totB:totB,sesi:myD.length,msesi:myD.length-baruD.length,days:Object.keys(days).length,sd:sd,tgB:tgB,pctT:pctT};
+  }).sort(function(a,b){return b.totB-a.totB||b.sesi-a.sesi;});
+  var maxB=0;stats.forEach(function(s){if(s.totB>maxB)maxB=s.totB;});if(!maxB)maxB=1;
+  var tSesi=DATA.length,tHal=Math.floor(DATA.filter(function(d){return d.kat==='baru';}).reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0)/BPH);
+  var html='<div style="background:#fff;border-radius:var(--rs);padding:11px 14px;box-shadow:var(--sh);margin-bottom:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center"><div><div class="sv" style="color:var(--e)">'+tSesi+'</div><div class="sl">Total Sesi</div></div><div><div class="sv" style="color:var(--g)">'+tHal+'</div><div class="sl">Hal. Baru</div></div><div><div class="sv" style="color:var(--e)">'+udates().length+'</div><div class="sl">Hari Aktif</div></div></div>';
+  stats.forEach(function(s,i){
+    var rc=i===0?'r1':i===1?'r2':i===2?'r3':'rn',cc=i===0?'g':i===1?'s':i===2?'b':'',em=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'';
+    var pB=Math.round(s.totB/maxB*100),done=s.pctT>=100,sn=s.n.replace(/'/g,"\\'");
+    var halBaru=Math.floor(s.totB/BPH),barBaru=s.totB%BPH;
+    html+='<div class="rkcard '+cc+'" onclick="openRaport(\''+sn+'\')"><div class="rkr '+rc+'">'+em+'</div><div class="rkb"><div class="rkn">'+s.n+(done?' ✅':'')+'</div><div class="rktags"><span class="rktag b">'+fmtHB(s.totB)+' baru</span><span class="rktag m">'+s.msesi+" muroja'ah</span><span class=\"rktag d\">"+s.days+' hari</span></div>'+(s.tgB?'<div style="margin-top:3px"><div class="tbar-info"><span>Target: '+s.pctT+'%</span><span>'+fmtHB(s.totB)+'/'+fmtHB(s.tgB)+'</span></div><div class="tbar"><span class="'+(done?'done':s.pctT>=50?'prog':'low')+'" style="width:'+s.pctT+'%"></span></div></div>':'')+'<div class="rkbar" style="margin-top:3px"><span style="width:'+pB+'%"></span></div></div><div class="rkt"><div class="tv">'+halBaru+'</div><div class="tl">hal baru</div></div></div>';
+  });
+  document.getElementById('rekapBox').innerHTML=html;
+}
+
+// ══════════ RAPORT ══════════
+function openRaport(nama){
+  var myD=DATA.filter(function(d){return d.nama===nama;}).sort(function(a,b){return a.tgl.localeCompare(b.tgl);}),
+    baruD=myD.filter(function(d){return d.kat==='baru';}),sd=gSD(nama);
+  var totB=baruD.reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0);
+  var halBaru=Math.floor(totB/BPH),barBaru=totB%BPH,sMuroj=myD.length-baruD.length;
+  var daysMap={};myD.forEach(function(d){daysMap[d.tgl]=true;});var days=Object.keys(daysMap).length;
+  var tgB=getTargetBaris(sd),pct=tgB?Math.min(100,Math.round(totB/tgB*100)):0,done=pct>=100;
+  var pos=getPosisiTerkini(sd);
+  // Rekap per pekan
+  var pkM={};
+  myD.forEach(function(d){
+    var mon=gMon(d.tgl);if(!pkM[mon])pkM[mon]={baru:0,muroj:0,totB:0,surah:[]};
+    if(d.kat==='baru'){pkM[mon].totB+=(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);pkM[mon].baru++;}
+    else pkM[mon].muroj++;
+    if(d.surah&&pkM[mon].surah.indexOf(d.surah)<0)pkM[mon].surah.push(d.surah);
+  });
+  var pkK=Object.keys(pkM).sort(),avgBPP=pkK.length?Math.round(pkK.reduce(function(a,k){return a+pkM[k].totB;},0)/pkK.length):0;
+  var sisaB=Math.max(0,tgB-totB),proj=avgBPP>0?Math.ceil(sisaB/avgBPP):null;
+  var grafK=pkK.slice(-8),maxG=0;grafK.forEach(function(k){if(pkM[k].totB>maxG)maxG=pkM[k].totB;});if(!maxG)maxG=1;
+  var grafH=grafK.length?'<div class="chart-o"><div class="chart-i">'+grafK.map(function(k){var b=pkM[k].totB,h=Math.max(Math.round(b/maxG*100),5);return'<div class="ccol"><div class="val">'+fmtHB(b)+'</div><div class="bar" style="height:'+h+'%"></div><div class="lbl">'+fs(k)+'</div></div>';}).join('')+'</div></div>':'<div style="color:var(--ink3);font-size:11px;text-align:center;padding:16px">Belum ada data</div>';
+  // Tabel rekap per pekan dengan surah & pct
+  var pkRows=pkK.slice().reverse().map(function(k,i){
+    var b=pkM[k].totB;
+    var pctPekan=tgB?Math.min(100,Math.round(b/tgB*100)):'-';
+    return'<tr><td style="font-size:9px;color:var(--ink3)">'+(pkK.length-i)+'</td><td>'+fs(k)+' – '+fs(gSun(k))+'</td><td style="font-weight:700;color:var(--e)">'+fmtHB(b)+'</td><td style="font-size:9px">'+pkM[k].surah.slice(0,2).join(', ')+'</td><td style="text-align:center;font-weight:700">'+(pctPekan!=='-'?'+'+pctPekan+'%':'-')+'</td><td style="text-align:center">'+pkM[k].baru+'</td><td style="text-align:center;color:#9a7010">'+pkM[k].muroj+'</td></tr>';
+  }).join('');
+  var riw=myD.slice().reverse().slice(0,15).map(function(s,i){var st=s.surah2?(s.surah+' '+s.ayat+'→'+s.surah2+' '+s.ayat2):(s.surah+' '+s.ayat);var tb=(parseInt(s.hal)||0)*BPH+(parseInt(s.baris)||0);return'<tr><td style="font-size:9px;color:var(--ink3)">'+(i+1)+'</td><td style="font-size:10px">'+fs(s.tgl)+'</td><td><span class="'+(s.kat==='baru'?'pt-b':'pt-m')+'">'+(s.kat==='baru'?'Baru':"Muroja'ah")+'</span></td><td style="font-size:10px">'+st+'</td><td style="text-align:center;font-weight:700;color:var(--e)">'+fmtHB(tb)+'</td></tr>';}).join('');
+  var ini=(nama||'?').replace(/[^a-zA-Z]/g,'').substring(0,2).toUpperCase();
+  var sdId=sd?sd.id:'',sn=nama.replace(/'/g,"\\'");
+  var tgStr=sd&&sd.targetDariSurah?(sd.targetDariSurah+(sd.targetDariAyat?' ayat '+sd.targetDariAyat:'')+'  →  '+sd.targetSampaiSurah+(sd.targetSampaiAyat?' ayat '+sd.targetSampaiAyat:'')):'Belum diset';
+  document.getElementById('rapBox').innerHTML=
+    '<div class="rhdr"><button class="rclose" onclick="closeRaport()">✕</button><div class="rav">'+ini+'</div><div class="rname">'+nama+'</div><div class="rsub">'+(sd&&sd.semester?sd.semester:'—')+(sd&&sd.posisiJuz?' · Juz '+sd.posisiJuz:'')+'</div></div>'
+    +(done?'<div class="tach"><span class="ti">🏆</span><div class="tt">Alhamdulillah! Target Tercapai!</div><div class="ts">'+nama+' telah menyelesaikan target '+tgStr+'</div></div>':'')
+    +'<div class="rsec"><div class="rsecttl">📍 Posisi Hafalan</div>'
+      +'<div class="pbox"><div class="pk">Posisi Awal Semester</div><div class="pv">Hal '+(sd?sd.posisiHal:'?')+' baris '+(sd?sd.posisiBaris:0)+(sd&&sd.posisiJuz?' · Juz '+sd.posisiJuz:'')+'</div></div>'
+      +'<div class="pbox" style="background:linear-gradient(135deg,#059669,#10b981);margin-top:6px"><div class="pk">Posisi Terkini (otomatis dihitung)</div><div class="pv">Hal '+pos.hal+' baris '+pos.baris+'</div><div class="ps">+'+fmtHB(totB)+' hafalan baru ditambahkan</div></div>'
+    +'</div>'
+    +'<div class="rsec"><div class="rsecttl">📊 Statistik Total</div>'
+      +'<div class="sgrid"><div class="sbox"><div class="bv">'+fmtHB(totB)+'</div><div class="bl">Hafalan Baru</div></div><div class="sbox"><div class="bv">'+sMuroj+'</div><div class="bl">Sesi Muroja\'ah</div></div><div class="sbox"><div class="bv">'+baruD.length+'</div><div class="bl">Sesi Baru</div></div><div class="sbox"><div class="bv">'+days+'</div><div class="bl">Hari Aktif</div></div></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);font-weight:600;padding:7px 9px;background:var(--eu);border-radius:var(--rs)"><span>⚡ Rata-rata/pekan: <strong style="color:var(--e)">'+fmtHB(avgBPP)+'</strong></span><span>📅 '+pkK.length+' pekan aktif</span></div>'
+    +'</div>'
+    +(tgB?'<div class="rsec"><div class="rsecttl">🎯 Progres Target</div>'
+      +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px">🎯 '+tgStr+'</div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:5px"><span style="color:'+(done?'#059669':'var(--e)')+'">'+pct+'% Tercapai</span><span style="font-size:11px;color:var(--ink3);font-weight:600">'+fmtHB(totB)+' / '+fmtHB(tgB)+'</span></div>'
+      +'<div class="tbar" style="height:9px;margin-bottom:8px"><span class="'+(done?'done':pct>=50?'prog':'low')+'" style="width:'+pct+'%;height:100%"></span></div>'
+      +'<div class="prog-detail"><div class="pd-row"><span class="pd-lbl">Sudah disetor</span><span class="pd-val">'+fmtHB(totB)+'</span></div><div class="pd-row"><span class="pd-lbl">Total target</span><span class="pd-val">'+fmtHB(tgB)+'</span></div><div class="pd-row"><span class="pd-lbl">Sisa</span><span class="pd-val">'+fmtHB(sisaB)+'</span></div>'+(proj!==null?'<div class="pd-row"><span class="pd-lbl">Proyeksi selesai</span><span class="pd-val">~'+proj+' pekan lagi</span></div>':'')+'</div>'
+    +'</div>':'')
+    +'<div class="rsec"><div class="rsecttl">📈 Grafik Per Pekan</div>'+grafH+'</div>'
+    +'<div class="rsec"><div class="rsecttl">📅 Rekap Per Pekan</div>'+(pkRows?'<table class="ptbl"><thead><tr><th>No</th><th>Pekan</th><th>Hafalan Baru</th><th>Surah</th><th>+Target%</th><th>Sesi</th><th>Muroja\'ah</th></tr></thead><tbody>'+pkRows+'</tbody></table>':'<div style="text-align:center;padding:16px;color:var(--ink3);font-size:11px">Belum ada data</div>')+'</div>'
+    +'<div class="rsec"><div class="rsecttl">📋 Riwayat Setoran</div>'+(riw?'<table class="pdoc-tbl"><thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Surah & Ayat</th><th>Hal+Baris</th></tr></thead><tbody>'+riw+'</tbody></table>':'<div style="text-align:center;padding:16px;color:var(--ink3);font-size:11px">Belum ada setoran.</div>')+'</div>'
+    +(sdId?'<button onclick="askDelSFromR(\''+sdId+'\',\''+sn+'\')" style="width:100%;padding:12px;background:var(--redp);border:2px solid rgba(192,57,43,.25);border-radius:var(--r);font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13px;font-weight:700;color:var(--red);cursor:pointer;margin-top:4px">🗑 Hapus Santri Ini dari Halaqah</button>':'');
+  document.getElementById('rapOv').classList.add('on');document.getElementById('rapOv').scrollTop=0;
+}
+function closeRaport(){document.getElementById('rapOv').classList.remove('on');}
+
+// ══════════ LAPORAN ══════════
+function bSel(){
+  var wks={};DATA.forEach(function(d){wks[gMon(d.tgl)]=true;});
+  var sp=document.getElementById('selPekan');sp.innerHTML='';
+  Object.keys(wks).sort().reverse().forEach(function(mon){var o=document.createElement('option');o.value=mon;o.textContent=fs(mon)+' – '+fs(gSun(mon));sp.appendChild(o);});
+  var months={};DATA.forEach(function(d){var p=d.tgl.split('-');months[p[0]+'-'+p[1]]=true;});
+  var sb=document.getElementById('selBulan'),st=document.getElementById('selTahun');sb.innerHTML='';st.innerHTML='';
+  var ys={},ms={};Object.keys(months).sort().reverse().forEach(function(ym){var p=ym.split('-');ys[p[0]]=true;ms[p[1]]=true;});
+  Object.keys(ys).forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;st.appendChild(o);});
+  Object.keys(ms).sort().forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=BN[parseInt(m)-1];sb.appendChild(o);});
+}
+function gRD(type){
+  var names=gNames(),rs,re,title,sub,wd;
+  if(type==='pekan'){var mon=document.getElementById('selPekan').value;if(!mon)return null;var sun=gSun(mon);rs=mon;re=sun;title='Laporan Perkembangan Tahfidz Pekanan';sub='Periode: '+fs(mon)+' – '+fs(sun);wd=DATA.filter(function(d){return d.tgl>=mon&&d.tgl<=sun;}).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});}
+  else{var m=document.getElementById('selBulan').value,y=document.getElementById('selTahun').value;if(!m||!y)return null;var mp=m.length===1?'0'+m:m;rs=y+'-'+mp+'-01';re=y+'-'+mp+'-31';title='Laporan Perkembangan Tahfidz Bulanan';sub='Periode: '+BN[parseInt(m)-1]+' '+y;wd=DATA.filter(function(d){return d.tgl>=rs&&d.tgl<=re;}).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});}
+  var bWd=wd.filter(function(d){return d.kat==='baru';}),totBP=bWd.reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0);
+  var aktif=[];wd.forEach(function(d){if(d.nama&&aktif.indexOf(d.nama)<0)aktif.push(d.nama);});
+  var absen=names.filter(function(n){return aktif.indexOf(n)<0;}),ps={};
+  names.forEach(function(n){ps[n]={baru:[],muroj:[],days:{},totB:0,surah:[]};});
+  wd.forEach(function(d){if(!d.nama||!ps[d.nama])return;if(d.kat==='baru'){ps[d.nama].baru.push(d);ps[d.nama].totB+=(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);}else ps[d.nama].muroj.push(d);ps[d.nama].days[d.tgl]=true;if(d.surah&&ps[d.nama].surah.indexOf(d.surah)<0)ps[d.nama].surah.push(d.surah);});
+  var pd={};wd.forEach(function(d){if(!pd[d.tgl])pd[d.tgl]=[];pd[d.tgl].push(d);});
+  return{title:title,sub:sub,wd:wd,totBP:totBP,aktif:aktif,absen:absen,ps:ps,pd:pd,names:names,cTgl:ff(today()),adays:Object.keys(pd).length};
+}
+function bHTML(rd){
+  if(!rd)return'<div style="text-align:center;padding:24px;color:#999">Pilih periode.</div>';
+  var maxB=0;rd.names.forEach(function(n){if(rd.ps[n].totB>maxB)maxB=rd.ps[n].totB;});if(!maxB)maxB=1;
+  var srows=rd.names.map(function(n,i){
+    var s=rd.ps[n],tot=s.baru.length+s.muroj.length,dc=Object.keys(s.days).length;
+    var sd=gSD(n),tgB=getTargetBaris(sd),tBAll=getTotalBarisBaru(n),tP=tgB?pctStr(tBAll,tgB):'-';
+    return'<tr><td style="color:var(--ink3);font-size:8px">'+(i+1)+'</td><td><strong>'+n+'</strong></td><td style="text-align:center">'+dc+'</td><td style="text-align:center;color:var(--e);font-weight:700">'+fmtHB(s.totB)+'</td><td style="text-align:center;font-weight:700">'+s.muroj.length+'</td><td style="font-size:9px">'+s.surah.slice(0,3).join(', ')+(s.surah.length>3?'...':'')+'</td><td style="text-align:center">'+tP+'</td><td>'+(tot>0?'<span class="pt-ok">✔ Aktif</span>':'<span class="pt-no">✗ Absen</span>')+'</td></tr>';
+  }).join('');
+  var drows=Object.keys(rd.pd).sort().map(function(tgl){var ss=rd.pd[tgl],rs=ss.map(function(s,i){var st=s.surah2?(s.surah+' '+s.ayat+'→'+s.surah2+' '+s.ayat2):(s.surah+' '+s.ayat);var tb=(parseInt(s.hal)||0)*BPH+(parseInt(s.baris)||0);return'<tr><td style="font-size:8px;color:var(--ink3)">'+(i+1)+'</td><td><span class="'+(s.halaqah==='subuh'?'pt-s':'pt-a')+'">'+(s.halaqah==='subuh'?'Shubuh':'Ashar')+'</span></td><td><strong>'+(s.nama||'')+'</strong></td><td><span class="'+(s.kat==='baru'?'pt-b':'pt-m')+'">'+(s.kat==='baru'?'Baru':"Muroja'ah")+'</span></td><td style="font-size:9px">'+st+'</td><td style="text-align:center;font-weight:700;color:var(--e)">'+fmtHB(tb)+'</td></tr>';}).join('');return'<div class="dayblock"><div class="dayhd"><span class="dd">'+ff(tgl)+'</span><span class="dc">'+ss.length+' sesi</span></div><table class="pdoc-tbl"><thead><tr><th>No</th><th>Waktu</th><th>Santri</th><th>Kategori</th><th>Surah & Ayat</th><th>Hal+Baris</th></tr></thead><tbody>'+rs+'</tbody></table></div>';}).join('');
+  var absenSec=rd.absen.length>0?'<div class="pdoc-sh">Santri Tidak Setor</div><table class="pdoc-tbl"><thead><tr><th>No</th><th>Nama</th><th>Keterangan</th></tr></thead><tbody>'+rd.absen.map(function(n,i){return'<tr><td style="font-size:8px;color:var(--ink3)">'+(i+1)+'</td><td><strong>'+n+'</strong></td><td style="color:var(--red);font-size:9px">Tidak ada setoran</td></tr>';}).join('')+'</tbody></table>':'<div style="background:var(--ep);border-radius:7px;padding:8px 12px;color:var(--e);font-size:11px;font-weight:700;text-align:center;margin-top:8px">🎉 Seluruh santri aktif setor!</div>';
+  return'<div class="pdoc"><div class="pdoc-lh"><div class="pdoc-logo">☽</div><div class="pdoc-org"><strong>Halaqah Restu Bumi</strong><span>Program Tahfidz Al-Qur\'an · Ba\'da Shubuh & Ba\'da Ashar</span></div><div class="pdoc-ar">حِفْظُ الْقُرْآن</div></div><div class="pdoc-title"><h3>'+rd.title+'</h3><p>'+rd.sub+'</p></div><div class="pdoc-meta"><div class="pdoc-mi"><div class="k">Dicetak</div><div class="v">'+rd.cTgl+'</div></div><div class="pdoc-mi"><div class="k">Musyrif</div><div class="v">Restu Bumi</div></div><div class="pdoc-mi"><div class="k">Jumlah Santri</div><div class="v">'+rd.names.length+' orang</div></div><div class="pdoc-mi"><div class="k">Hari Aktif</div><div class="v">'+rd.adays+' hari</div></div></div><div class="pdoc-srow"><div class="pdoc-sb psb-g"><div class="sv">'+rd.wd.length+'</div><div class="sl">Total Sesi</div></div><div class="pdoc-sb psb-y"><div class="sv">'+fmtHB(rd.totBP)+'</div><div class="sl">Hal Baru</div></div><div class="pdoc-sb psb-n"><div class="sv">'+rd.wd.filter(function(d){return d.kat==='murojaah';}).length+"</div><div class=\"sl\">Muroja'ah</div></div><div class=\"pdoc-sb psb-r\"><div class=\"sv\">"+rd.absen.length+'</div><div class="sl">Tidak Setor</div></div></div><div class="pdoc-sh">Rekapitulasi Per Santri</div><table class="pdoc-tbl"><thead><tr><th>No</th><th>Nama</th><th>Hari</th><th>Hal Baru</th><th>Muroja\'ah</th><th>Surah Disetor</th><th>Target%</th><th>Status</th></tr></thead><tbody>'+srows+'</tbody></table><div class="pdoc-sh">Detail Setoran Per Hari</div>'+(rd.wd.length===0?'<div style="text-align:center;padding:16px;color:#999;font-size:10px">Tidak ada data.</div>':drows)+absenSec+'<div class="pdoc-notes"><div class="nk">Catatan Musyrif</div><div class="nl"></div><div class="nl"></div><div class="nl"></div></div><div class="pdoc-ttd"><div class="ttdcell"><div class="ttdlbl">Mengetahui,<br>Pembina / Kepala Program</div><div class="ttdline">________________</div><div class="ttdrole">&nbsp;</div></div><div class="ttdcell"><div class="ttdlbl">Dibuat oleh,<br>Musyrif Tahfidz</div><div class="ttdline">Restu Bumi</div><div class="ttdrole">Musyrif Halaqah</div></div></div><div class="pdoc-ft"><span>Halaqah Restu Bumi · Tahfidz Al-Qur\'an</span><span>'+rd.sub+'</span></div></div>';
+}
+function doPreview(type){var rd=gRD(type),pv=document.getElementById(type==='pekan'?'pvPekan':'pvBulan');document.getElementById(type==='pekan'?'pvPekanBody':'pvBulanBody').innerHTML=bHTML(rd);pv.classList.add('on');pv.scrollIntoView({behavior:'smooth',block:'nearest'});}
+function doPDF(type){
+  var rd=gRD(type);if(!rd){toast('⚠ Pilih periode dulu.');return;}
+  var jsPDF=window.jspdf.jsPDF,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),W=doc.internal.pageSize.getWidth(),M=13;var y=M;
+  var chk=function(n){if(y+(n||18)>280){doc.addPage();y=M;}};
+  doc.setFillColor(26,107,74);doc.rect(0,0,W,24,'F');doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(255,255,255);doc.text('HALAQAH RESTU BUMI',M,9);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.text("Program Tahfidz Al-Qur'an · Ba'da Shubuh & Ba'da Ashar",M,14);doc.text('Musyrif: Restu Bumi',M,19);doc.text('Dicetak: '+rd.cTgl,W-M,19,{align:'right'});y=30;
+  doc.setFillColor(26,107,74);doc.roundedRect(M,y,W-2*M,12,3,3,'F');doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);doc.text(rd.title.toUpperCase(),W/2,y+5.5,{align:'center'});doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.text(rd.sub,W/2,y+10,{align:'center'});y+=17;
+  var mi=[['Periode',rd.sub],['Santri',rd.names.length+' orang'],['Aktif',rd.aktif.length+' orang'],['Hari Aktif',rd.adays+' hari']],mw=(W-2*M)/4;
+  mi.forEach(function(m,i){var mx=M+i*mw;doc.setFillColor(240,250,245);doc.rect(mx,y,mw-2,12,'F');doc.setFontSize(6);doc.setTextColor(26,107,74);doc.setFont('helvetica','bold');doc.text(m[0].toUpperCase(),mx+2,y+4.5);doc.setFontSize(7.5);doc.setTextColor(26,26,24);doc.text(m[1],mx+2,y+10);});y+=17;
+  var si=[[rd.wd.length+'','Total Sesi',[26,107,74]],[fmtHB(rd.totBP),'Hal Baru',[196,154,42]],[rd.wd.filter(function(d){return d.kat==='murojaah';}).length+'',"Muroja'ah",[100,130,100]],[rd.absen.length+'','Tidak Setor',[192,57,43]]],sw=(W-2*M)/4;
+  si.forEach(function(s,i){var sx=M+i*sw;doc.setFillColor(s[2][0],s[2][1],s[2][2]);doc.roundedRect(sx,y,sw-2,14,2,2,'F');doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(255,255,255);doc.text(s[0],sx+sw/2-1,y+8,{align:'center'});doc.setFontSize(5.5);doc.setFont('helvetica','normal');doc.text(s[1].toUpperCase(),sx+sw/2-1,y+12.5,{align:'center'});});y+=19;
+  chk(8);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(26,107,74);doc.text('REKAPITULASI PER SANTRI',M,y);y+=3;
+  doc.autoTable({startY:y,head:[['No','Nama','Hari','Hal Baru','Muroja\'ah','Surah Disetor','Target%','Status']],body:rd.names.map(function(n,i){var s=rd.ps[n],tot=s.baru.length+s.muroj.length;var sd=gSD(n),tgB=getTargetBaris(sd),tBAll=getTotalBarisBaru(n),tP=tgB?pctStr(tBAll,tgB):'-';return[i+1,n,Object.keys(s.days).length,fmtHB(s.totB),s.muroj.length,s.surah.slice(0,2).join(', '),tP,tot>0?'✔ Aktif':'✗ Absen'];}),theme:'grid',headStyles:{fillColor:[26,107,74],textColor:255,fontStyle:'bold',fontSize:6,halign:'center'},bodyStyles:{fontSize:7,textColor:[26,26,24]},columnStyles:{0:{halign:'center',cellWidth:7},2:{halign:'center'},3:{halign:'center',textColor:[26,107,74],fontStyle:'bold'},4:{halign:'center'},6:{halign:'center'},7:{halign:'center'}},alternateRowStyles:{fillColor:[240,250,245]},margin:{left:M,right:M}});y=doc.lastAutoTable.finalY+6;
+  Object.keys(rd.pd).sort().forEach(function(tgl){var ss=rd.pd[tgl];chk(12);doc.setFillColor(240,250,245);doc.roundedRect(M,y,W-2*M,6,2,2,'F');doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(26,107,74);doc.text(ff(tgl),M+2,y+4.5);doc.setFillColor(26,107,74);doc.roundedRect(W-M-15,y+1,14,4,2,2,'F');doc.setFontSize(6);doc.setTextColor(255,255,255);doc.text(ss.length+' sesi',W-M-8,y+4,{align:'center'});y+=8;doc.autoTable({startY:y,head:[['No','Waktu','Santri','Kategori','Surah & Ayat','Hal+Baris']],body:ss.map(function(s,i){var st=s.surah2?(s.surah+' '+s.ayat+'→'+s.surah2+' '+s.ayat2):(s.surah+' '+s.ayat);var tb=(parseInt(s.hal)||0)*BPH+(parseInt(s.baris)||0);return[i+1,s.halaqah==='subuh'?"Ba'da Shubuh":"Ba'da Ashar",(s.nama||''),s.kat==='baru'?'Baru':"Muroja'ah",st,fmtHB(tb)];}),theme:'striped',headStyles:{fillColor:[26,26,24],textColor:255,fontStyle:'bold',fontSize:6,halign:'center'},bodyStyles:{fontSize:7,textColor:[26,26,24]},columnStyles:{0:{halign:'center',cellWidth:7},5:{halign:'center'}},alternateRowStyles:{fillColor:[240,250,245]},margin:{left:M,right:M}});y=doc.lastAutoTable.finalY+4;});
+  if(rd.absen.length>0){chk(12);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(192,57,43);doc.text('SANTRI TIDAK SETOR',M,y);y+=3;doc.autoTable({startY:y,head:[['No','Nama','Keterangan']],body:rd.absen.map(function(n,i){return[i+1,n,'Tidak ada setoran'];}),theme:'grid',headStyles:{fillColor:[192,57,43],textColor:255,fontStyle:'bold',fontSize:6.5},bodyStyles:{fontSize:7.5},columnStyles:{0:{halign:'center',cellWidth:7}},margin:{left:M,right:M}});y=doc.lastAutoTable.finalY+6;}
+  chk(38);y+=4;var tL=M+20,tR=W/2+20;doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(90,90,80);doc.text('Mengetahui,',tL,y,{align:'center'});doc.text('Dibuat oleh,',tR,y,{align:'center'});doc.text('Pembina / Kepala Program',tL,y+4,{align:'center'});doc.text('Musyrif Tahfidz',tR,y+4,{align:'center'});y+=30;doc.line(tL-18,y,tL+18,y);doc.line(tR-18,y,tR+18,y);y+=4;doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(26,26,24);doc.text('___________________',tL,y,{align:'center'});doc.text('Restu Bumi',tR,y,{align:'center'});doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(90,90,80);doc.text('Musyrif Halaqah',tR,y+4,{align:'center'});
+  var total=doc.internal.getNumberOfPages();for(var i=1;i<=total;i++){doc.setPage(i);doc.setFillColor(26,107,74);doc.rect(0,289,W,8,'F');doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(255,255,255);doc.text("Halaqah Restu Bumi · Tahfidz Al-Qur'an",M,294);doc.text('Hal. '+i+'/'+total,W-M,294,{align:'right'});}
+  doc.save('Laporan_Tahfidz_'+(type==='pekan'?'Pekanan':'Bulanan')+'_'+today()+'.pdf');toast('✔ PDF berhasil diunduh!');
+}
+
+// ══════════ REKAP CEPAT ══════════
+function openRK(){
+  var names=gNames(),stats=names.map(function(n){var bD=DATA.filter(function(d){return d.nama===n&&d.kat==='baru';}),totB=bD.reduce(function(a,d){return a+(parseInt(d.hal)||0)*BPH+(parseInt(d.baris)||0);},0);return{n:n,totB:totB,sesi:DATA.filter(function(d){return d.nama===n;}).length};}).sort(function(a,b){return b.totB-a.totB;});
+  document.getElementById('rkModal').innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--eu)"><th style="padding:6px;text-align:left;font-size:9px;text-transform:uppercase;color:var(--e)">Santri</th><th style="padding:6px;text-align:center;font-size:9px;color:var(--e)">Hal Baru</th><th style="padding:6px;text-align:center;font-size:9px;color:var(--e)">Total Sesi</th></tr></thead><tbody>'+stats.map(function(s){return'<tr style="border-bottom:1px solid var(--ink4)"><td style="padding:8px 6px;font-weight:700">'+s.n+'</td><td style="text-align:center;padding:8px 6px"><span style="background:var(--ep);color:var(--e);font-weight:700;font-size:11px;padding:2px 8px;border-radius:50px">'+fmtHB(s.totB)+'</span></td><td style="text-align:center;padding:8px 6px;font-weight:700">'+s.sesi+'</td></tr>';}).join('')+'</tbody></table><div style="margin-top:10px;padding:8px 10px;background:var(--eu);border-radius:var(--rs);font-size:11px;color:var(--ink3);font-weight:600">📌 Total sesi: <strong style="color:var(--e)">'+DATA.length+'</strong> · Hari aktif: <strong style="color:var(--e)">'+udates().length+'</strong></div>';
+  openOv('ovRK');
+}
+
+// ══════════ MODAL / TOAST ══════════
+function openOv(id){document.getElementById(id).classList.add('on');}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+function closeOvOut(e,id){if(e.target.id===id)closeOv(id);}
+var _tt;function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('on');},2800);}
+</script>
+</body>
+</html>
