@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tahfizh Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<!-- Firebase dimuat secara dinamis di script utama -->
+<style>
+:root{
+  --g1:#1e6b4f;--g2:#28a169;--g3:#e8f5ee;
+  --gold:#c8963e;--gold2:#f0c97a;--goldbg:#fef9ee;
+  --ink:#1a1a2e;--ink2:#2d2d44;--muted:#8c8c9e;
+  --cream:#fdf8f0;--sand:#f5ede0;--border:#e0d4c0;
+  --danger:#c0392b;--dangerbg:#fde8e8;
+  --blue:#1a56c4;--bluebg:#e8f0fe;
+  --purple:#7c3aed;--purplebg:#ede9fe;
+  --r:14px;--shadow:0 4px 20px rgba(26,26,46,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;padding-bottom:80px}
+
+.app-header{background:linear-gradient(135deg,var(--ink),var(--ink2));color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hlogo{display:flex;align-items:center;gap:10px}
+.hlogo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:grid;place-items:center;font-family:'Amiri',serif;font-size:1.3rem;color:var(--ink)}
+.hlogo-name{font-size:.95rem;font-weight:700}.hlogo-sub{font-size:.68rem;opacity:.6}
+.hlogo-ar{font-family:'Amiri',serif;font-size:1.1rem;color:var(--gold2);direction:rtl}
+.offline-pill{font-size:.72rem;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15)}
+.offline-dot{width:7px;height:7px;border-radius:50%;background:#6ee7b7}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid var(--border);display:flex}
+.bnav-btn{flex:1;padding:10px 4px 8px;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;font-size:.6rem;font-weight:600;color:var(--muted);transition:all .15s}
+.bnav-btn .bicon{font-size:1.2rem;transition:transform .15s}
+.bnav-btn.active{color:var(--g1)}
+.bnav-btn.active .bicon{transform:translateY(-2px)}
+
+.section{display:none;padding:0 0 16px}
+.section.active{display:block}
+
+.date-strip{padding:14px 16px 10px;overflow-x:auto;display:flex;gap:8px;-webkit-overflow-scrolling:touch}
+.date-strip::-webkit-scrollbar{display:none}
+.date-chip{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;color:var(--muted)}
+.date-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.date-chip.today{border-color:var(--g1);color:var(--g1)}
+
+.status-section{padding:0 16px 10px}
+.status-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.status-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.status-chip{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;border:1.5px solid transparent}
+.status-chip.sudah{background:var(--g3);color:var(--g1);border-color:var(--g1)}
+.status-chip.belum{background:#fff5f5;color:var(--danger);border-color:#fca5a5}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.dot-sudah{background:var(--g2)}.dot-belum{background:var(--danger)}
+.progress-row{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.prog-bar-bg{flex:1;height:6px;background:#e0e0e8;border-radius:3px;overflow:hidden}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--g1),var(--g2));border-radius:3px;transition:width .4s}
+
+.filter-strip{padding:0 16px 10px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.filter-strip::-webkit-scrollbar{display:none}
+.fchip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--muted);transition:all .15s}
+.fchip.active{border-color:var(--ink);background:var(--ink);color:#fff}
+.fchip.green.active{border-color:var(--g1);background:var(--g1);color:#fff}
+.fchip.blue.active{border-color:var(--blue);background:var(--blue);color:#fff}
+.fchip.gold.active{border-color:var(--gold);background:var(--gold);color:#fff}
+
+.waktu-group{margin:0 16px 12px}
+.waktu-label{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.waktu-shubuh{background:#fff7e6;color:#92600a}
+.waktu-ashar{background:#e8f5ee;color:var(--g1)}
+.waktu-maghrib{background:#f0e6ff;color:var(--purple)}
+
+.setor-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.setor-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.9rem;color:#fff;flex-shrink:0}
+.av-baru{background:linear-gradient(135deg,var(--g1),var(--g2))}
+.av-muroj{background:linear-gradient(135deg,var(--blue),#3b82f6)}
+.av-tasmi{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)}
+.setor-info{flex:1;min-width:0}
+.setor-name{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:6px}
+.setor-surah{font-size:.82rem;color:var(--ink2);margin-top:2px}
+.setor-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.setor-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.setor-hal{font-size:1rem;font-weight:700;color:var(--g1)}
+.setor-hal-lbl{font-size:.6rem;color:var(--muted)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700}
+.b-baru{background:var(--g3);color:var(--g1)}
+.b-muroj{background:var(--bluebg);color:var(--blue)}
+.b-tasmi{background:var(--goldbg);color:var(--gold)}
+.b-gray{background:#f0f0f5;color:var(--muted)}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:var(--shadow)}
+.stat-val{font-size:1.5rem;font-weight:700;color:var(--g1)}
+.stat-val.gold{color:var(--gold)}.stat-val.blue{color:var(--blue)}.stat-val.purple{color:var(--purple)}
+.stat-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+.rank-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.rank-card:hover{border-color:var(--g1)}
+.rank-avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.95rem;color:#fff;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-weight:700;font-size:.88rem}
+.rank-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.rtag{font-size:.67rem;padding:2px 7px;border-radius:10px;font-weight:600}
+.rtag-g{background:var(--g3);color:var(--g1)}
+.rtag-b{background:var(--bluebg);color:var(--blue)}
+.rtag-m{background:#f0f0f5;color:var(--muted)}
+.rtag-p{background:var(--purplebg);color:var(--purple)}
+.bar-wrap{margin-top:6px;display:flex;align-items:center;gap:6px}
+.bar-bg{flex:1;height:5px;background:#e0e0e8;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.bar-baru{background:linear-gradient(90deg,var(--g1),var(--g2))}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:8px;font-family:inherit;font-size:.83rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--g1);color:#fff}.btn-primary:hover{background:var(--g2)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--sand)}
+.btn-danger{background:var(--dangerbg);color:var(--danger)}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-outline{background:var(--g3);color:var(--g1);border:1px solid var(--g1)}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+.btn-full{width:100%;justify-content:center}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.fab-wrap{position:fixed;bottom:68px;right:16px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.fab{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;font-size:1.5rem;box-shadow:0 4px 16px rgba(0,0,0,.2);background:var(--g1);color:#fff;transition:all .15s}
+.fab:hover{background:var(--g2);transform:scale(1.05)}
+.fab-mini{background:#fff;color:var(--ink);border-radius:24px;padding:7px 14px;width:auto;height:auto;font-family:inherit;font-weight:600;font-size:.8rem;display:flex;align-items:center;gap:6px;border:1px solid var(--border);box-shadow:var(--shadow)}
+
+.overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(26,26,46,.55);backdrop-filter:blur(4px);justify-content:flex-end;align-items:flex-end}
+.overlay.open{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:94vh;overflow-y:auto;animation:slideUp .25s}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+.sheet-head{padding:14px 16px 12px;border-bottom:1px solid var(--border)}
+.sheet-title{font-size:1rem;font-weight:700;color:var(--g1)}
+.sheet-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.sheet-body{padding:16px}
+.sheet-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+
+.raport-page{display:none;position:fixed;inset:0;z-index:300;background:var(--cream);overflow-y:auto}
+.raport-page.open{display:block;animation:fadeIn .2s}
+.raport-topbar{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.raport-body{padding:16px;max-width:600px;margin:0 auto}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.75rem;font-weight:700;color:var(--ink2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.88rem;color:var(--ink);background:#fff;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--g1);box-shadow:0 0 0 3px rgba(30,107,79,.1)}
+.field-hint{font-size:.72rem;color:var(--muted);background:var(--goldbg);padding:8px 10px;border-radius:6px;border-left:3px solid var(--gold);line-height:1.6;margin-top:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g1);border-top:none;border-radius:0 0 9px 9px;max-height:180px;overflow-y:auto;z-index:50;box-shadow:var(--shadow)}
+.autocomplete-item{padding:9px 13px;font-size:.85rem;cursor:pointer;transition:background .1s}
+.autocomplete-item:hover{background:var(--g3)}
+.autocomplete-item strong{color:var(--g1)}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.card-head{padding:12px 14px;background:var(--sand);border-bottom:1px solid var(--border);font-size:.82rem;font-weight:700;color:var(--ink2)}
+.card-body{padding:14px}
+
+.pos-card{border-radius:10px;padding:12px;margin-bottom:8px;color:#fff}
+.pos-card.a{background:var(--g1)}.pos-card.b{background:var(--g2)}
+.pos-lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-bottom:3px}
+.pos-val{font-size:1rem;font-weight:700}
+
+.wtable{width:100%;font-size:.78rem;border-collapse:collapse}
+.wtable th{padding:7px 8px;text-align:left;font-size:.7rem;font-weight:600;text-transform:uppercase;color:var(--muted);background:var(--sand);border-bottom:1px solid var(--border)}
+.wtable td{padding:7px 8px;border-bottom:1px solid #f0e8da}
+.wtable tr:last-child td{border-bottom:none}
+
+.config-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.cfg-lbl{font-size:.8rem;font-weight:700;margin-bottom:6px;color:var(--ink2)}
+.cfg-hint{font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.7}
+
+#toast{position:fixed;bottom:80px;right:12px;z-index:999;display:flex;flex-direction:column;gap:6px}
+.toast-item{padding:10px 14px;border-radius:10px;font-size:.82rem;font-weight:500;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .25s;max-width:280px}
+@keyframes toastIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.t-ok{background:var(--g1);color:#fff}.t-err{background:var(--danger);color:#fff}.t-info{background:var(--blue);color:#fff}
+
+.load-ov{display:none;position:fixed;inset:0;z-index:400;background:rgba(255,255,255,.75);backdrop-filter:blur(2px);place-items:center}
+.load-ov.show{display:grid}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--g1);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .ei{font-size:3rem;margin-bottom:8px}
+
+.lap-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.lap-title{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:12px}
+
+.sec-banner{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;padding:14px 16px;margin-bottom:0}
+.sec-banner h2{font-size:1rem;font-weight:700;margin-bottom:2px}
+.sec-banner p{font-size:.75rem;opacity:.85}
+
+.pekan-alert{margin:10px 16px;padding:10px 12px;border-radius:10px;font-size:.78rem;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.pekan-alert.warn{background:#fff7e6;border:1px solid #fcd34d;color:#92600a}
+.pekan-alert.info{background:var(--bluebg);border:1px solid #93c5fd;color:var(--blue)}
+
+.drow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);font-size:.82rem}
+.drow:last-child{border-bottom:none}
+.dlbl{color:var(--muted)}.dval{font-weight:600}
+
+/* Offline badge di setting */
+.offline-badge{display:inline-flex;align-items:center;gap:6px;background:var(--g3);color:var(--g1);border:1px solid var(--g1);border-radius:20px;padding:5px 12px;font-size:.78rem;font-weight:600;margin-bottom:12px}
+.backup-info{background:var(--bluebg);border:1px solid #93c5fd;border-radius:10px;padding:12px;font-size:.78rem;color:var(--blue);line-height:1.7;margin-bottom:12px}
+
+@media print{
+  body{background:#fff;padding:0}
+  .app-header,.bottom-nav,.fab-wrap,.no-print{display:none!important}
+  .raport-page{position:static;overflow:visible}
+  .raport-topbar{position:static}
+}
+</style>
+</head>
+<body>
+
+<div class="load-ov" id="loadOv"><div style="text-align:center"><div class="spinner"></div><div style="margin-top:8px;font-size:.8rem;color:var(--muted)" id="loadMsg">Memuat...</div></div></div>
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="hlogo">
+    <div class="hlogo-icon">ق</div>
+    <div><div class="hlogo-name">Tahfizh Tracker</div><div class="hlogo-sub" id="halaqahName">Halaqah</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="hlogo-ar">حِفْظُ الْقُرْآن</div>
+    <div class="offline-pill" id="statusPill" onclick="syncFromFirestore(false)" style="cursor:pointer" title="Tap untuk sync ulang"><div class="offline-dot" id="statusDot"></div><span id="statusTxt">Memuat...</span></div>
+  </div>
+</header>
+
+<!-- ═══ SEC: SETOR ═══ -->
+<section class="section active" id="sec-setor">
+  <div class="date-strip" id="dateStrip"></div>
+  <div class="status-section">
+    <div class="status-title">Status Santri Hari Ini</div>
+    <div class="status-chips" id="statusChips"></div>
+    <div class="progress-row">
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="progFill" style="width:0%"></div></div>
+      <span id="progLabel">0/0</span>
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:2px" id="progDesc">Progress: 0 santri sudah setor (0%)</div>
+  </div>
+  <div class="filter-strip" id="filterStrip">
+    <div class="fchip active" data-filter="semua" onclick="setFilter('semua',this)">Semua</div>
+    <div class="fchip blue" data-filter="Murajaah" onclick="setFilter('Murajaah',this)">Muroja'ah</div>
+    <div class="fchip green" data-filter="Hafalan Baru" onclick="setFilter('Hafalan Baru',this)">Hafalan Baru</div>
+    <div class="fchip gold" data-filter="Tasmi'" onclick="setFilter('Tasmi\'',this)">Tasmi'</div>
+    <div class="fchip" data-filter="Ba'da Shubuh" onclick="setFilter('Ba\'da Shubuh',this)">Ba'da Shubuh</div>
+    <div class="fchip" data-filter="Ba'da Ashar" onclick="setFilter('Ba\'da Ashar',this)">Ba'da Ashar</div>
+    <div class="fchip" data-filter="Ba'da Maghrib" onclick="setFilter('Ba\'da Maghrib',this)">Ba'da Maghrib</div>
+  </div>
+  <div style="padding:0 4px" id="setoranBody"></div>
+  <div style="padding:0 16px;margin-top:4px">
+    <div style="font-size:.7rem;color:var(--muted);text-align:center" id="setoranCount"></div>
+  </div>
+</section>
+
+<!-- ═══ SEC: REKAP ═══ -->
+<section class="section" id="sec-rekap">
+  <div class="sec-banner" style="background:linear-gradient(135deg,#92600a,var(--gold))">
+    <h2>🏆 Rekap &amp; Peringkat</h2>
+    <p>Tap nama santri untuk raport lengkap</p>
+  </div>
+  <div style="padding:14px 16px 0;display:flex;gap:6px">
+    <div class="fchip gold active" id="rekapModeTotal" onclick="setRekapMode('total')">📊 Sepanjang Waktu</div>
+    <div class="fchip blue" id="rekapModeWeek" onclick="setRekapMode('pekan')">📅 Pekan Ini</div>
+  </div>
+  <div style="padding:8px 16px 0;font-size:.72rem;color:var(--muted)" id="rekapPeriodLbl"></div>
+  <div style="padding:10px 16px 10px">
+    <div class="stats-row" id="rekapStats">
+      <div class="stat-box"><div class="stat-val" id="rSesi">—</div><div class="stat-lbl" id="rSesiLbl">Total Sesi</div></div>
+      <div class="stat-box"><div class="stat-val gold" id="rHal">—</div><div class="stat-lbl">Hal. Baru</div></div>
+      <div class="stat-box"><div class="stat-val blue" id="rMuroj">—</div><div class="stat-lbl">Sesi Muroja'ah</div></div>
+    </div>
+  </div>
+  <div id="rekapList" style="padding:0 16px"></div>
+</section>
+
+<!-- ═══ SEC: LAPORAN ═══ -->
+<section class="section" id="sec-laporan">
+  <div class="sec-banner"><h2>📄 Cetak Laporan Resmi</h2><p>Pratinjau lalu unduh / print</p></div>
+  <div style="height:14px"></div>
+  <div class="lap-card">
+    <div class="lap-title">📅 Laporan Pekanan</div>
+    <div class="field"><label>Pilih Pekan</label><select id="lapPekan"></select></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="pratinjau('pekan')">👁️ Pratinjau</button>
+      <button class="btn btn-primary btn-sm" onclick="cetakPDF('pekan')">🖨️ Print/PDF</button>
+    </div>
+  </div>
+  <div class="lap-card" style="border-top:3px solid var(--gold)">
+    <div class="lap-title">📅 Laporan Bulanan</div>
+    <div class="form-row">
+      <div class="field"><label>Bulan</label>
+        <select id="lapBulan">
+          <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option>
+          <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
+          <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
+          <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+        </select>
+      </div>
+      <div class="field"><label>Tahun</label><input type="number" id="lapTahun" value="2026"/></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="pratinjau('bulan')">👁️ Pratinjau</button>
+      <button class="btn btn-gold btn-sm" onclick="cetakPDF('bulan')">🖨️ Print/PDF</button>
+    </div>
+  </div>
+  <div class="lap-card" style="border-top:3px solid var(--blue)">
+    <div class="lap-title">👤 Raport Per Santri</div>
+    <div class="field"><label>Pilih Santri</label><select id="lapSantriSel"></select></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="bukaRaport(document.getElementById('lapSantriSel').value)">👁️ Lihat Raport</button>
+      <button class="btn btn-primary btn-sm" onclick="printRaport(document.getElementById('lapSantriSel').value)">🖨️ Print</button>
+    </div>
+  </div>
+  <div class="lap-card" style="border-top:3px solid #10b981">
+    <div class="lap-title">💾 Backup &amp; Restore Data</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="exportData()">⬇️ Export JSON</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">⬆️ Import JSON</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)"/>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:8px;line-height:1.6">💡 Export secara rutin untuk backup data. Import untuk memulihkan data dari file backup.</div>
+  </div>
+</section>
+
+<!-- ═══ SEC: SANTRI ═══ -->
+<section class="section" id="sec-santri">
+  <div class="sec-banner" style="background:linear-gradient(135deg,#1a56c4,#2563eb)"><h2>👥 Database Santri</h2><p>Kelola data &amp; target hafalan semester</p></div>
+  <div style="height:14px"></div>
+  <div id="santriList" style="padding:0 16px"></div>
+  <div style="padding:0 16px;margin-top:4px"><button class="btn btn-outline btn-full" onclick="openSantriSheet()">+ Tambah Santri Baru</button></div>
+</section>
+
+<!-- ═══ SEC: SETTING ═══ -->
+<section class="section" id="sec-setting">
+  <div class="sec-banner" style="background:linear-gradient(135deg,#374151,#1f2937)"><h2>⚙️ Pengaturan</h2><p>Sync Firestore + mode offline</p></div>
+  <div style="height:14px"></div>
+
+  <!-- Firestore Sync Card -->
+  <div class="config-card" style="border-top:3px solid var(--g1)">
+    <div class="cfg-lbl">🔥 Sinkronisasi Firestore</div>
+    <div id="syncStatusBox" style="background:var(--g3);border:1px solid var(--g1);border-radius:10px;padding:12px;font-size:.78rem;color:var(--g1);line-height:1.7;margin-bottom:12px">
+      ⏳ Menunggu koneksi...
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="syncFromFirestore(false)">🔄 Sync dari Firestore</button>
+      <button class="btn btn-outline btn-sm" onclick="pushToFirestore()">⬆️ Upload ke Firestore</button>
+    </div>
+    <div class="cfg-hint" style="margin-top:10px">
+      🔄 <strong>Sync dari Firestore</strong> — tarik semua data santri &amp; setoran dari cloud<br>
+      ⬆️ <strong>Upload ke Firestore</strong> — kirim data lokal ke cloud (hati-hati: timpa data cloud)
+    </div>
+  </div>
+
+  <div class="config-card">
+    <div class="cfg-lbl">🏫 Nama Halaqah</div>
+    <div class="field"><input type="text" id="cfgHalaqah" placeholder="cth: Halaqah Ust. Restu"/></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan</button>
+    </div>
+  </div>
+  <div class="config-card">
+    <div class="cfg-lbl">📊 Statistik Penyimpanan Lokal</div>
+    <div id="storageInfo" style="font-size:.8rem;color:var(--muted);line-height:2"></div>
+  </div>
+  <div class="config-card">
+    <div class="cfg-lbl">📖 Cara Kerja</div>
+    <div class="cfg-hint">
+      1️⃣ Buka halaman ini saat ada internet → otomatis sync dari Firestore<br>
+      2️⃣ Data tersimpan di browser → bisa dipakai offline<br>
+      3️⃣ Tambah setoran offline → data tersimpan lokal<br>
+      4️⃣ Saat online lagi → tap "Upload ke Firestore" untuk kirim data baru<br>
+      ⚠️ Jangan hapus cache browser — data lokal bisa hilang
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:4px;padding:0 16px;display:flex;flex-direction:column;gap:8px">
+    <button class="btn btn-gold btn-full" onclick="cleanDataSemester()" style="background:linear-gradient(135deg,#8B4513,#c8963e);color:#fff">🧹 Clean Data (Ganti Semester)</button>
+    <button class="btn btn-outline btn-sm" onclick="debugData()">🔍 Cek Data (Debug)</button>
+    <button class="btn btn-danger btn-sm" onclick="clearCache()">🗑️ Hapus Semua Data Lokal</button>
+  </div>
+</section>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" onclick="switchTab('setor',this)"><span class="bicon">📋</span>SETOR</button>
+  <button class="bnav-btn" onclick="switchTab('rekap',this)"><span class="bicon">🏆</span>REKAP</button>
+  <button class="bnav-btn" onclick="switchTab('laporan',this)"><span class="bicon">📄</span>LAPORAN</button>
+  <button class="bnav-btn" onclick="switchTab('santri',this)"><span class="bicon">👥</span>SANTRI</button>
+  <button class="bnav-btn" onclick="switchTab('setting',this)"><span class="bicon">⚙️</span>SETTING</button>
+</nav>
+
+<!-- FAB -->
+<div class="fab-wrap">
+  <button class="fab fab-mini" onclick="openRekapCepat()">📊 Rekap Cepat</button>
+  <button class="fab" onclick="openSetoranSheet()">＋</button>
+</div>
+
+<!-- ═══ SHEET: SETORAN ═══ -->
+<div class="overlay" id="sheetSetoran">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><div class="sheet-title" id="titSetor">Tambah Setoran</div><div class="sheet-sub">Catat hafalan santri hari ini</div></div>
+    <div class="sheet-body">
+      <div class="form-row">
+        <div class="field"><label>Tanggal</label><input type="date" id="s_tgl" oninput="updateTglHari()"/><div id="s_tgl_hari" style="font-size:.75rem;color:var(--g1);font-weight:700;margin-top:4px"></div></div>
+        <div class="field"><label>Waktu</label>
+          <select id="s_waktu"><option>Ba'da Shubuh</option><option>Ba'da Ashar</option><option>Ba'da Maghrib</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Nama Santri *</label><select id="s_nama"><option value="">— Pilih —</option></select></div>
+      <div class="field"><label>Kategori</label>
+        <select id="s_kat" onchange="onKatChange()">
+          <option>Hafalan Baru</option><option>Murajaah</option><option>Tasmi'</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Surah *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="s_surah" placeholder="Ketik nama surah..." autocomplete="off" oninput="acSurah('s_surah','s_surahList')" onblur="setTimeout(()=>hideAc('s_surahList'),200)"/>
+          <div class="autocomplete-list" id="s_surahList" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field"><label>Ayat</label><input type="text" id="s_ayat" placeholder="cth: 1-15 atau 28-37"/></div>
+      <div id="surah2Wrap">
+        <div class="field">
+          <label>Surah/Bacaan Tambahan <span style="font-weight:400;color:var(--muted)">(jika lintas surah / lebih dari 1 surah, boleh dari juz berbeda-beda)</span></label>
+          <div id="s_segmentsList"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addSegment()" style="margin-top:2px">+ Tambah Surah Lain</button>
+        </div>
+        <div class="field-hint">💡 Tidak harus satu rentang berurutan — bisa tambah beberapa surah terpisah sekaligus (misal dari juz yang berbeda-beda) dalam satu sesi setoran ini.</div>
+      </div>
+      <div id="halWrap">
+        <div class="form-row">
+          <div class="field"><label>Halaman Madinah</label><input type="number" id="s_hal" value="0" min="0"/></div>
+          <div class="field"><label>Baris (+sisa)</label><input type="number" id="s_baris" value="0" min="0"/></div>
+        </div>
+        <div class="field-hint">💡 <strong>Hafalan Baru:</strong> isi halaman jika genap 1 hal (15 baris). Baris = sisa yang belum genap 1 hal.</div>
+      </div>
+      <div id="murJuzWrap" style="display:none">
+        <div class="field"><label>Area Muroja'ah (Juz / Surah)</label>
+          <input type="text" id="s_murJuz" placeholder="cth: Juz 1, atau Al-Baqarah – Ali Imran"/>
+        </div>
+        <div class="field-hint">📌 Catat area muroja'ah agar bisa dipantau polanya.</div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('sheetSetoran')">Batal</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveSetoran()" id="btnSaveSetor">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SHEET: SANTRI ═══ -->
+<div class="overlay" id="sheetSantri">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><div class="sheet-title" id="titSantri">Tambah Santri</div><div class="sheet-sub">Data santri halaqah</div></div>
+    <div class="sheet-body">
+      <div class="field"><label>Nama Lengkap *</label><input type="text" id="st_nama" placeholder="Nama santri"/></div>
+      <div class="field"><label>Semester / Periode</label><input type="text" id="st_sem" placeholder="cth: 2025/2026 Genap"/></div>
+      <div class="form-row">
+        <div class="field"><label>Sudah Punya (Juz)</label><input type="number" id="st_juz" value="0" min="0" max="30" placeholder="0"/></div>
+        <div class="field"><label>Sudah Punya (Halaman)</label><input type="number" id="st_hal" value="0" min="0" placeholder="0"/></div>
+      </div>
+      <div class="field-hint">💡 Isi juz + halaman tambahan yang sudah dihafal sebelum masuk halaqah ini. Contoh: 2 juz + 5 halaman.</div>
+      <div class="field">
+        <label>Juz Berapa Saja yang Sudah Dihafal</label>
+        <input type="text" id="st_juzList" placeholder="cth: 1, 2, 3, 5-7, 30"/>
+      </div>
+      <div class="field-hint">📖 Sebutkan nomor juz yang sudah dihafal (boleh tidak berurutan). Contoh: 1, 2, 3, 5-7, 30 — bisa dipisah koma atau rentang pakai tanda strip.</div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('sheetSantri')">Batal</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveSantri()" id="btnSaveSantri">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RAPORT PAGE ═══ -->
+<div class="raport-page" id="raportPage">
+  <div class="raport-topbar no-print">
+    <button class="btn btn-ghost btn-sm" onclick="closeRaport()" style="color:#fff;border-color:rgba(255,255,255,.3)">← Kembali</button>
+    <span style="font-weight:700">Raport Santri</span>
+    <button class="btn btn-gold btn-sm" onclick="window.print()">🖨️ Print</button>
+  </div>
+  <div class="raport-body" id="raportContent"></div>
+</div>
+
+<!-- ═══ SHEET: REKAP CEPAT ═══ -->
+<div class="overlay" id="sheetRekap">
+  <div class="sheet" style="max-height:80vh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><div class="sheet-title">📊 Rekap Cepat Hari Ini</div></div>
+    <div class="sheet-body" id="rekapCepatBody"></div>
+    <div class="sheet-foot"><button class="btn btn-ghost btn-full" onclick="closeSheet('sheetRekap')">Tutup</button></div>
+  </div>
+</div>
+
+<!-- ═══ SHEET: KONFIRMASI ═══ -->
+<div class="overlay" id="sheetConfirm">
+  <div class="sheet" style="max-height:50vh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-body" style="text-align:center;padding:24px 20px">
+      <div style="font-size:2.5rem">🗑️</div>
+      <div style="font-weight:700;margin:10px 0 6px">Hapus Data?</div>
+      <div style="font-size:.82rem;color:var(--muted)" id="confirmMsg">Yakin?</div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('sheetConfirm')">Batal</button>
+      <button class="btn btn-danger" style="flex:1" id="btnConfirm">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ 114 SURAH ══ */
+const SURAH_LIST=[
+  "Al-Fatihah","Al-Baqarah","Ali Imran","An-Nisa","Al-Maidah","Al-An'am","Al-A'raf","Al-Anfal","At-Taubah","Yunus",
+  "Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr","An-Nahl","Al-Isra","Al-Kahfi","Maryam","Ta Ha",
+  "Al-Anbiya","Al-Hajj","Al-Mu'minun","An-Nur","Al-Furqan","Asy-Syu'ara","An-Naml","Al-Qasas","Al-Ankabut","Ar-Rum",
+  "Luqman","As-Sajdah","Al-Ahzab","Saba","Fatir","Ya Sin","As-Saffat","Sad","Az-Zumar","Gafir",
+  "Fussilat","Asy-Syura","Az-Zukhruf","Ad-Dukhan","Al-Jasiyah","Al-Ahqaf","Muhammad","Al-Fath","Al-Hujurat","Qaf",
+  "Az-Zariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman","Al-Waqiah","Al-Hadid","Al-Mujadilah","Al-Hasyr","Al-Mumtahanah",
+  "As-Saf","Al-Jumuah","Al-Munafiqun","At-Tagabun","At-Talaq","At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Maarij",
+  "Nuh","Al-Jin","Al-Muzzammil","Al-Muddassir","Al-Qiyamah","Al-Insan","Al-Mursalat","An-Naba","An-Naziat","Abasa",
+  "At-Takwir","Al-Infitar","Al-Mutaffifin","Al-Insyiqaq","Al-Buruj","At-Tariq","Al-A'la","Al-Gasyiyah","Al-Fajr","Al-Balad",
+  "Asy-Syams","Al-Lail","Ad-Duha","Al-Insyirah","At-Tin","Al-Alaq","Al-Qadr","Al-Bayyinah","Az-Zalzalah","Al-Adiyat",
+  "Al-Qari'ah","At-Takasur","Al-Asr","Al-Humazah","Al-Fil","Quraisy","Al-Maun","Al-Kausar","Al-Kafirun","An-Nasr",
+  "Al-Lahab","Al-Ikhlas","Al-Falaq","An-Nas"
+];
+
+/* ══ STATE ══ */
+let HALAQAH  = localStorage.getItem('halaqah_name')||'Halaqah';
+let setoranDB=[], santriDB=[];
+let editSetoranId=null, editSantriId=null;
+let activeFilter='semua', activeDateIdx=0;
+let allDates=[];
+let currentSegments=[];
+let rekapMode='total'; // 'total' = sepanjang waktu, 'pekan' = reset tiap pekan (Senin-Minggu)
+
+/* ══ UTILS ══ */
+const $=id=>document.getElementById(id);
+const today=()=>{
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+};
+const uid=()=>'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+
+/* ══ FIX: escape string agar aman disisipkan ke dalam onclick="...('...')"
+   Ini mencegah tombol gagal berfungsi (silent fail) saat nama santri
+   mengandung tanda kutip satu ('), kutip dua ("), atau karakter < > & ══ */
+const jsAttr=s=>String(s||'')
+  .replace(/\\/g,'\\\\')
+  .replace(/'/g,"\\'")
+  .replace(/"/g,'&quot;')
+  .replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;');
+
+const initials=n=>(n||'?').split(' ').slice(0,2).map(w=>(w[0]||'').toUpperCase()).join('');
+const fmtDate=d=>{if(!d)return'—';try{return new Date(String(d).split('T')[0]).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});}catch{return d;}};
+const fmtShort=d=>{if(!d)return'—';try{const dt=new Date(String(d).split('T')[0]);return dt.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});}catch{return d;}};
+const hariName=d=>{if(!d)return'';try{return new Date(String(d).split('T')[0]).toLocaleDateString('id-ID',{weekday:'long'});}catch{return'';}};
+const fmtDatePrint=d=>{if(!d)return'—';try{const dt=new Date(String(d).split('T')[0]);return dt.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});}catch{return d;}};
+const isoWeek=d=>{
+  const dt=new Date(String(d||'').split('T')[0]);
+  if(isNaN(dt))return'';
+  const jan4=new Date(dt.getFullYear(),0,4);
+  const wk=Math.ceil(((dt-jan4)/86400000+jan4.getDay()+1)/7);
+  return dt.getFullYear()+'-W'+(wk<10?'0':'')+wk;
+};
+const weekLabel=wk=>{
+  const [yr,wn]=wk.split('-W');
+  const d=new Date(Number(yr),0,1+(Number(wn)-1)*7);
+  return 'Pekan '+wn+' ('+d.toLocaleDateString('id-ID',{month:'short',year:'numeric'})+')';
+};
+const katBadge=k=>k==='Hafalan Baru'?'b-baru':k==='Murajaah'?'b-muroj':'b-tasmi';
+const katAvClass=k=>k==='Hafalan Baru'?'av-baru':k==='Murajaah'?'av-muroj':'av-tasmi';
+const avatarColors=['linear-gradient(135deg,#f59e0b,#fcd34d)','linear-gradient(135deg,#9ca3af,#d1d5db)','linear-gradient(135deg,#b45309,#d97706)','linear-gradient(135deg,var(--g1),var(--g2))'];
+const rankColor=i=>avatarColors[Math.min(i,3)];
+const waktuIcon=w=>w==="Ba'da Shubuh"?'🌅':w==="Ba'da Ashar"?'☀️':'🌙';
+const waktuClass=w=>w==="Ba'da Shubuh"?'waktu-shubuh':w==="Ba'da Ashar"?'waktu-ashar':'waktu-maghrib';
+
+/* ══ Helper: teks surah/ayat lengkap (termasuk lintas surah / banyak surah terpisah) ══
+   Mendukung banyak segmen tambahan (tidak hanya 1 "surah akhir"), dan tetap
+   kompatibel dengan data lama yang cuma punya surah2/ayat2. */
+function getSegments(s){
+  if(Array.isArray(s.segments)) return s.segments;
+  if(s.segmentsJson){
+    try{ const arr=JSON.parse(s.segmentsJson); if(Array.isArray(arr)) return arr; }catch{}
+  }
+  if(s.surah2) return [{surah:s.surah2, ayat:s.ayat2||''}];
+  return [];
+}
+function surahAyatText(s){
+  let t = (s.surah||'—');
+  if(s.ayat) t += ' ayat '+s.ayat;
+  getSegments(s).forEach(seg=>{
+    if(seg && seg.surah) t += ' → '+seg.surah+(seg.ayat?' ayat '+seg.ayat:'');
+  });
+  return t;
+}
+
+/* ══ AUTOCOMPLETE ══ */
+function acSurah(inputId,listId){
+  const q=($(inputId).value||'').toLowerCase().trim();
+  const list=$(listId);
+  if(!q){list.style.display='none';return;}
+  const matches=SURAH_LIST.filter(s=>s.toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(s=>`<div class="autocomplete-item" onmousedown="pickSurah('${inputId}','${listId}','${s}')">${s.replace(new RegExp('('+q+')','gi'),'<strong>$1</strong>')}</div>`).join('');
+  list.style.display='block';
+}
+function pickSurah(inputId,listId,val){
+  $(inputId).value=val;
+  hideAc(listId);
+  const m=inputId.match(/^seg_surah_(\d+)$/);
+  if(m) updateSegment(Number(m[1]),'surah',val);
+}
+function hideAc(listId){$(listId).style.display='none';}
+
+/* ══ SEGMENTS (Surah/Bacaan Tambahan — bisa lebih dari 1, boleh dari juz berbeda) ══ */
+function renderSegments(){
+  const wrap=$('s_segmentsList');
+  if(!wrap)return;
+  if(!currentSegments.length){
+    wrap.innerHTML='<div style="font-size:.75rem;color:var(--muted);padding:2px 0 6px">Belum ada surah tambahan. Tap "+ Tambah Surah Lain" jika setoran mencakup lebih dari 1 surah.</div>';
+    return;
+  }
+  wrap.innerHTML=currentSegments.map((seg,i)=>`
+    <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;background:var(--sand);border-radius:8px;padding:8px">
+      <div style="flex:1">
+        <div class="autocomplete-wrap" style="margin-bottom:6px">
+          <input type="text" id="seg_surah_${i}" placeholder="Nama surah ke-${i+2}" autocomplete="off" value="${jsAttr(seg.surah||'')}"
+            oninput="updateSegment(${i},'surah',this.value);acSurah('seg_surah_${i}','seg_surah_list_${i}')"
+            onblur="setTimeout(()=>hideAc('seg_surah_list_${i}'),200)"
+            style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.85rem"/>
+          <div class="autocomplete-list" id="seg_surah_list_${i}" style="display:none"></div>
+        </div>
+        <input type="text" id="seg_ayat_${i}" placeholder="Ayat (cth: 1-10)" value="${jsAttr(seg.ayat||'')}"
+          oninput="updateSegment(${i},'ayat',this.value)"
+          style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.85rem"/>
+      </div>
+      <button type="button" class="btn btn-danger btn-sm" onclick="removeSegment(${i})" style="margin-top:2px">🗑️</button>
+    </div>
+  `).join('');
+}
+function addSegment(){
+  currentSegments.push({surah:'',ayat:''});
+  renderSegments();
+}
+function removeSegment(i){
+  currentSegments.splice(i,1);
+  renderSegments();
+}
+function updateSegment(i,field,val){
+  if(!currentSegments[i]) currentSegments[i]={surah:'',ayat:''};
+  currentSegments[i][field]=val;
+}
+
+/* ══ KAT CHANGE ══ */
+function updateTglHari(){
+  const v=$('s_tgl').value;
+  $('s_tgl_hari').textContent = v ? '📅 '+hariName(v) : '';
+}
+
+function onKatChange(){
+  const kat=$('s_kat').value;
+  $('halWrap').style.display=kat==='Hafalan Baru'?'':'none';
+  $('murJuzWrap').style.display=kat==='Murajaah'?'':'none';
+}
+
+/* ══ TOAST ══ */
+function toast(msg,type='ok',dur=3000){
+  const el=document.createElement('div');
+  el.className='toast-item t-'+(type==='ok'?'ok':type==='info'?'info':'err');
+  el.innerHTML=(type==='ok'?'✅':type==='info'?'ℹ️':'❌')+' '+msg;
+  $('toast').appendChild(el);
+  if(dur>0)setTimeout(()=>el.remove(),dur);
+}
+
+/* ══ LOADING ══ */
+const showLoad=m=>{$('loadMsg').textContent=m||'Memuat...';$('loadOv').classList.add('show');};
+const hideLoad=()=>$('loadOv').classList.remove('show');
+
+/* ══ STORAGE (OFFLINE) ══ */
+function saveLocal(){
+  try{
+    localStorage.setItem('setoranDB',JSON.stringify(setoranDB));
+    localStorage.setItem('santriDB',JSON.stringify(santriDB));
+  }catch(e){
+    toast('Penyimpanan penuh! Hapus data lama atau export backup.','err',6000);
+  }
+}
+function loadLocal(){
+  try{setoranDB=JSON.parse(localStorage.getItem('setoranDB')||'[]');}catch{setoranDB=[];}
+  try{santriDB=JSON.parse(localStorage.getItem('santriDB')||'[]');}catch{santriDB=[];}
+}
+
+/* ══ EXPORT / IMPORT ══ */
+function exportData(){
+  const data={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    halaqah:HALAQAH,
+    setoranDB,
+    santriDB
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const tgl=today();
+  a.download='tahfizh-backup-'+tgl+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Data berhasil diekspor ✓','ok');
+}
+
+function importData(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.setoranDB||!data.santriDB){toast('Format file tidak valid','err');return;}
+      if(!confirm(`Import data dari "${file.name}"?\n\nIni akan MENGGANTIKAN semua data yang ada sekarang.\n\nSetoran: ${data.setoranDB.length} | Santri: ${data.santriDB.length}`))return;
+      setoranDB=data.setoranDB||[];
+      santriDB=data.santriDB||[];
+      if(data.halaqah){HALAQAH=data.halaqah;localStorage.setItem('halaqah_name',HALAQAH);}
+      saveLocal();
+      renderAll();
+      toast('Data berhasil diimport ✓ ('+setoranDB.length+' setoran, '+santriDB.length+' santri)','ok',5000);
+    }catch(err){
+      toast('File tidak valid atau rusak','err');
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+/* ══ RENDER ALL ══ */
+function renderAll(){
+  $('halaqahName').textContent=HALAQAH;
+  buildDateStrip();
+  renderSetor();
+  renderRekap();
+  renderSantriList();
+  populateLapDropdowns();
+  populateSantriDrop();
+  updateStorageInfo();
+}
+
+/* ══ STORAGE INFO ══ */
+function updateStorageInfo(){
+  const sSize=new Blob([JSON.stringify(setoranDB)]).size;
+  const stSize=new Blob([JSON.stringify(santriDB)]).size;
+  const total=sSize+stSize;
+  const fmt=b=>b>1024?(b/1024).toFixed(1)+' KB':b+' B';
+  $('storageInfo').innerHTML=
+    `📋 Setoran: <strong>${setoranDB.length} data</strong> (${fmt(sSize)})<br>`+
+    `👥 Santri: <strong>${santriDB.length} data</strong> (${fmt(stSize)})<br>`+
+    `💾 Total: <strong>${fmt(total)}</strong> dari ~5 MB batas browser<br>`+
+    `🕐 Terakhir dibuka: ${new Date().toLocaleString('id-ID')}`;
+}
+
+/* ══ TAB ══ */
+function switchTab(name,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  $('sec-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='setting')updateStorageInfo();
+}
+
+/* ══ SHEET ══ */
+function openSheet(id){$(id).classList.add('open');}
+function closeSheet(id){$(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+/* ══ DATE STRIP ══ */
+function buildDateStrip(){
+  const dates=[...new Set(setoranDB.map(s=>String(s.tgl||'').split('T')[0]).filter(Boolean))].sort().reverse();
+  const td=today();
+  if(!dates.includes(td))dates.unshift(td);
+  allDates=dates;
+  const strip=$('dateStrip');
+  strip.innerHTML=dates.map((d,i)=>{
+    const isToday=d===td;
+    const active=i===activeDateIdx;
+    return`<div class="date-chip${active?' active':''}${isToday&&!active?' today':''}" onclick="selectDate(${i})">${fmtShort(d)}${isToday?' · Hari ini':''}</div>`;
+  }).join('');
+}
+function selectDate(idx){activeDateIdx=idx;buildDateStrip();renderSetor();}
+
+/* ══ FILTER ══ */
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderSetor();
+}
+
+/* ══ SETOR SECTION ══ */
+function renderSetor(){
+  const selDate=allDates[activeDateIdx]||today();
+  // Status pakai tanggal yang sedang dipilih - nama case-insensitive
+  const selDateSetor=setoranDB.filter(s=>String(s.tgl||'').split('T')[0]===selDate);
+  const sudahNamaLower=new Set(selDateSetor.map(s=>String(s.nama||'').toLowerCase().trim()));
+  const sudahNama={has: n => sudahNamaLower.has(String(n||'').toLowerCase().trim()), size: sudahNamaLower.size};
+  const chipsEl=$('statusChips');
+  chipsEl.innerHTML=santriDB.map(s=>{
+    const sudah=sudahNama.has(s.nama);
+    return`<div class="status-chip ${sudah?'sudah':'belum'}" onclick="bukaRaport('${jsAttr(s.nama)}')">
+      <div class="status-dot ${sudah?'dot-sudah':'dot-belum'}"></div>${s.nama}
+    </div>`;
+  }).join('');
+  const pct=santriDB.length?Math.round((sudahNama.size/santriDB.length)*100):0;
+  $('progFill').style.width=pct+'%';
+  $('progLabel').textContent=sudahNama.size+'/'+santriDB.length;
+  const isToday=selDate===today();
+  $('progDesc').textContent='Progress '+( isToday?'hari ini':'tgl '+fmtShort(selDate))+': '+sudahNama.size+' dari '+santriDB.length+' santri sudah setor ('+pct+'%)';
+
+  // Filter setoran untuk tanggal dipilih, normalisasi on-the-fly
+  let list=setoranDB
+    .filter(s=>String(s.tgl||'').split('T')[0]===selDate)
+    .map(s=>({...s, kat:normalizeKat(s.kat), halaqah:normalizeHalaqah(s.halaqah)}));
+  if(activeFilter!=='semua'){
+    if(["Ba'da Shubuh","Ba'da Ashar","Ba'da Maghrib"].includes(activeFilter)){
+      list=list.filter(s=>s.halaqah===activeFilter);
+    } else {
+      list=list.filter(s=>s.kat===activeFilter);
+    }
+  }
+
+  const groups={};
+  list.forEach(s=>{const w=s.halaqah||"Ba'da Shubuh";if(!groups[w])groups[w]=[];groups[w].push(s);});
+  const waktuOrder=["Ba'da Shubuh","Ba'da Ashar","Ba'da Maghrib"];
+  const body=$('setoranBody');
+  if(!list.length){
+    body.innerHTML=`<div class="empty-state"><div class="ei">📋</div><p>Tidak ada setoran<br>pada ${fmtDate(selDate)}.<br>Tap tombol + untuk menambah.</p></div>`;
+    $('setoranCount').textContent='';
+    return;
+  }
+  let html='';
+  waktuOrder.forEach(waktu=>{
+    if(!groups[waktu])return;
+    html+=`<div class="waktu-group">
+      <div class="waktu-label ${waktuClass(waktu)}">${waktuIcon(waktu)} ${waktu}</div>
+      ${groups[waktu].map(s=>setoranCardHTML(s)).join('')}
+    </div>`;
+  });
+  body.innerHTML=html;
+  $('setoranCount').textContent=list.length+' setoran pada '+fmtDate(selDate);
+}
+
+function setoranCardHTML(s){
+  const avClass=katAvClass(s.kat);
+  const ini=initials(s.nama);
+  return`<div class="setor-card">
+    <div class="setor-avatar ${avClass}">${ini}</div>
+    <div class="setor-info">
+      <div class="setor-name">${s.nama||'—'} <span class="badge ${katBadge(s.kat)}">${s.kat}</span></div>
+      <div class="setor-surah">${surahAyatText(s)}</div>
+      ${s.murJuz?`<div class="setor-meta">📍 Muroja'ah: ${s.murJuz}</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editSetoran('${jsAttr(s.id)}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDel('setoran','${jsAttr(s.id)}','setoran ini')">🗑️</button>
+        <button class="btn btn-ghost btn-sm" onclick="bukaRaport('${jsAttr(s.nama)}')">📊 Raport</button>
+      </div>
+    </div>
+    <div class="setor-right">
+      ${s.kat==='Hafalan Baru'&&s.hal?`<div class="setor-hal">${s.hal}</div><div class="setor-hal-lbl">HAL</div>`:''}
+      ${s.kat==='Hafalan Baru'&&s.baris?`<div style="font-size:.72rem;color:var(--muted)">+${s.baris} brs</div>`:''}
+      ${s.kat==='Murajaah'?`<div style="font-size:1.2rem">🔄</div>`:''}
+      ${s.kat==="Tasmi'"?`<div style="font-size:1.2rem">🎤</div>`:''}
+    </div>
+  </div>`;
+}
+
+/* ══ HITUNG STATS SEMUA SANTRI ══ */
+function hitungSemuaStats(){
+  const mp={};
+  // Buat map nama lowercase -> nama asli santri untuk pencocokan
+  const namaMap={};
+  santriDB.forEach(s=>{
+    mp[s.nama]={st:s,hal:0,barisTotal:0,sisaBaris:0,muroj:0,tasmi:0,sesiNew:0,hari:new Set()};
+    namaMap[s.nama.toLowerCase().trim()]=s.nama;
+  });
+
+  setoranDB.forEach(s=>{
+    // Coba cocokkan nama dengan fuzzy match
+    const daftarNama = Object.keys(mp);
+    const namaAsli = cariNamaCocok(s.nama, daftarNama);
+    if(!mp[namaAsli]) mp[namaAsli]={st:{nama:namaAsli},hal:0,barisTotal:0,sisaBaris:0,muroj:0,tasmi:0,sesiNew:0,hari:new Set()};
+    const m=mp[namaAsli];
+    const tgl=String(s.tgl||'').split('T')[0];if(tgl)m.hari.add(tgl);
+    // Normalisasi kat on-the-fly
+    const kat=normalizeKat(s.kat);
+    if(kat==='Hafalan Baru'){m.hal+=(Number(s.hal)||0);m.barisTotal+=(Number(s.baris)||0);m.sesiNew++;}
+    if(kat==='Murajaah')m.muroj++;
+    if(kat==="Tasmi'")m.tasmi++;
+  });
+
+  // Konversi akumulasi baris lintas sesi menjadi halaman penuh (15 baris = 1 halaman)
+  // Ini penting karena santri sering setor baris sedikit-sedikit tiap sesi sampai genap 1 halaman
+  Object.values(mp).forEach(m=>{
+    m.hal += Math.floor(m.barisTotal/15);
+    m.sisaBaris = m.barisTotal % 15;
+  });
+
+  return mp;
+}
+
+// Cari nama santri yang paling cocok (fuzzy)
+function cariNamaCocok(namaInput, daftarNama){
+  const input = String(namaInput||'').toLowerCase().trim();
+  if(!input) return namaInput;
+  // 1. Exact match case-insensitive
+  const exact = daftarNama.find(n=>n.toLowerCase().trim()===input);
+  if(exact) return exact;
+  // 2. Salah satu kata cocok (misal "hegel" cocok dengan "Hegel Fawwaz")
+  const kata = input.split(/\s+/);
+  const partial = daftarNama.find(n=>{
+    const nLow = n.toLowerCase();
+    return kata.some(k=>k.length>=3 && nLow.includes(k));
+  });
+  if(partial) return partial;
+  // 3. Tidak ketemu, kembalikan aslinya
+  return namaInput;
+}
+
+/* ══ HITUNG STATS PEKAN INI (reset tiap Senin, patokan ISO week = Senin–Minggu) ══
+   Sama semangatnya dengan hitungSemuaStats(), tapi cuma menghitung setoran
+   yang tanggalnya jatuh di pekan berjalan. Dipakai untuk toggle "Pekan Ini"
+   di tab Rekap dan untuk badge progress mingguan di Database Santri. */
+function hitungStatsPekanIni(){
+  const wk=isoWeek(today());
+  const mp={};
+  santriDB.forEach(s=>{
+    mp[s.nama]={st:s,hal:0,baris:0,muroj:0,tasmi:0,sesiNew:0,hari:new Set()};
+  });
+  setoranDB.forEach(s=>{
+    if(isoWeek(s.tgl)!==wk)return;
+    const daftarNama=Object.keys(mp);
+    const namaAsli=cariNamaCocok(s.nama,daftarNama);
+    if(!mp[namaAsli]) mp[namaAsli]={st:{nama:namaAsli},hal:0,baris:0,muroj:0,tasmi:0,sesiNew:0,hari:new Set()};
+    const m=mp[namaAsli];
+    const tgl=String(s.tgl||'').split('T')[0];if(tgl)m.hari.add(tgl);
+    const kat=normalizeKat(s.kat);
+    if(kat==='Hafalan Baru'){m.hal+=(Number(s.hal)||0);m.baris+=(Number(s.baris)||0);m.sesiNew++;}
+    if(kat==='Murajaah')m.muroj++;
+    if(kat==="Tasmi'")m.tasmi++;
+  });
+  return mp;
+}
+
+// Normalisasi halaqah/waktu
+function normalizeHalaqah(h){
+  const map={
+    'subuh':"Ba'da Shubuh",'shubuh':"Ba'da Shubuh","ba'da shubuh":"Ba'da Shubuh",
+    'ashar':"Ba'da Ashar","ba'da ashar":"Ba'da Ashar",
+    'maghrib':"Ba'da Maghrib","ba'da maghrib":"Ba'da Maghrib"
+  };
+  return map[(h||'').toLowerCase().trim()]||h||"Ba'da Shubuh";
+}
+
+// Normalisasi kat saja (dipanggil di mana saja)
+function normalizeKat(kat){
+  const k=(kat||'').toLowerCase().trim();
+  const katMap={
+    'murojaah':'Murajaah','muroja\'ah':'Murajaah','murajaah':'Murajaah',
+    'hafalan baru':'Hafalan Baru','hafalan':'Hafalan Baru','baru':'Hafalan Baru',
+    "tasmi'":"Tasmi'",'tasmi':"Tasmi'"
+  };
+  return katMap[k]||kat;
+}
+
+/* ══ HITUNG KATEGORI JUARA ══ */
+function hitungJuara(mp){
+  const list=Object.values(mp);
+  if(!list.length) return {};
+  const maxHal=Math.max(...list.map(m=>m.hal),0);
+  const maxMuroj=Math.max(...list.map(m=>m.muroj),0);
+  const maxSesi=Math.max(...list.map(m=>m.sesiNew),0);
+
+  // Top Hafalan: halaman terbanyak
+  const topHal=maxHal>0?[...list].sort((a,b)=>b.hal-a.hal)[0]:null;
+  // Top Muroja'ah: sesi muroj terbanyak
+  const topMuroj=maxMuroj>0?[...list].sort((a,b)=>b.muroj-a.muroj)[0]:null;
+  // Top Keduanya: skor gabungan normalisasi
+  const topGabungan=[...list].sort((a,b)=>{
+    const sA=(maxHal?a.hal/maxHal:0)+(maxMuroj?a.muroj/maxMuroj:0);
+    const sB=(maxHal?b.hal/maxHal:0)+(maxMuroj?b.muroj/maxMuroj:0);
+    return sB-sA;
+  })[0];
+
+  return {
+    topHal: topHal?.st.nama,
+    topMuroj: topMuroj?.st.nama,
+    topGabungan: topGabungan?.st.nama,
+  };
+}
+
+/* ══ LABEL JUARA SANTRI ══ */
+function getLabelJuara(nama, juara){
+  const labels=[];
+  if(juara.topHal===nama) labels.push({txt:'🥇 Top Hafalan Baru', cls:'rtag-g'});
+  if(juara.topMuroj===nama) labels.push({txt:"🥇 Top Muroja'ah", cls:'rtag-b'});
+  if(juara.topGabungan===nama && juara.topHal!==nama && juara.topMuroj!==nama)
+    labels.push({txt:'🥇 Top Keduanya', cls:'rtag-p'});
+  return labels;
+}
+
+/* ══ REKAP ══ */
+function setRekapMode(mode){
+  rekapMode=mode;
+  $('rekapModeTotal').classList.toggle('active',mode==='total');
+  $('rekapModeWeek').classList.toggle('active',mode==='pekan');
+  renderRekap();
+}
+
+function renderRekap(){
+  const isPekan=rekapMode==='pekan';
+  const wk=isoWeek(today());
+
+  const mp = isPekan ? hitungStatsPekanIni() : hitungSemuaStats();
+  const total = isPekan ? setoranDB.filter(s=>isoWeek(s.tgl)===wk).length : setoranDB.length;
+  const muroj = isPekan ? setoranDB.filter(s=>isoWeek(s.tgl)===wk&&normalizeKat(s.kat)==='Murajaah').length : setoranDB.filter(s=>s.kat==='Murajaah').length;
+  const hal=Object.values(mp).reduce((a,m)=>a+m.hal,0);
+  $('rSesi').textContent=total;$('rHal').textContent=hal;$('rMuroj').textContent=muroj;
+  $('rSesiLbl').textContent=isPekan?'Sesi Pekan Ini':'Total Sesi';
+  $('rekapPeriodLbl').textContent=isPekan
+    ?'📅 '+weekLabel(wk)+' (Senin–Minggu) · Peringkat reset tiap pekan'
+    :'📊 Akumulasi sejak awal';
+
+  const juara=hitungJuara(mp);
+  const sorted=Object.values(mp).sort((a,b)=>b.hal-a.hal);
+  if(!sorted.length){$('rekapList').innerHTML='<div class="empty-state"><div class="ei">🏆</div><p>Belum ada data.</p></div>';return;}
+  if(isPekan && sorted.every(m=>m.hal===0&&m.muroj===0&&m.tasmi===0)){
+    $('rekapList').innerHTML='<div class="empty-state"><div class="ei">📅</div><p>Belum ada setoran pekan ini.<br>Peringkat akan muncul begitu ada setoran.</p></div>';
+    return;
+  }
+
+  // Tampilkan banner juara
+  let bannerHtml=`<div style="margin-bottom:12px">
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🏆 Kategori Juara${isPekan?' Pekan Ini':''}</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${juara.topHal?`<div style="background:var(--g3);border:1px solid var(--g1);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px"><span style="font-size:1.3rem">🥇</span><div><div style="font-size:.72rem;color:var(--muted);font-weight:600">TOP HAFALAN BARU</div><div style="font-weight:700;color:var(--g1)">${juara.topHal}</div></div></div>`:''}
+      ${juara.topMuroj?`<div style="background:var(--bluebg);border:1px solid var(--blue);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px"><span style="font-size:1.3rem">🥇</span><div><div style="font-size:.72rem;color:var(--blue);font-weight:600">TOP MUROJA'AH</div><div style="font-weight:700;color:var(--blue)">${juara.topMuroj}</div></div></div>`:''}
+      ${juara.topGabungan&&juara.topGabungan!==juara.topHal&&juara.topGabungan!==juara.topMuroj?`<div style="background:var(--purplebg);border:1px solid var(--purple);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px"><span style="font-size:1.3rem">🥇</span><div><div style="font-size:.72rem;color:var(--purple);font-weight:600">TOP KEDUANYA</div><div style="font-weight:700;color:var(--purple)">${juara.topGabungan}</div></div></div>`:''}
+    </div>
+  </div>`;
+
+  const maxHalPekan=Math.max(...Object.values(mp).map(x=>x.hal),1);
+
+  $('rekapList').innerHTML=bannerHtml+sorted.map((m,i)=>{
+    const tH=Number(m.st.targetHal||50)||50;
+    // Total: progress dibanding target semester. Pekan: progress relatif thd santri lain pekan ini.
+    const pctHal=isPekan?Math.min(100,Math.round((m.hal/maxHalPekan)*100)):Math.min(100,Math.round((m.hal/tH)*100));
+    const maxMuroj=Math.max(...Object.values(mp).map(x=>x.muroj),1);
+    const pctMuroj=Math.min(100,Math.round((m.muroj/maxMuroj)*100));
+    const labelJuara=getLabelJuara(m.st.nama, juara);
+    return`<div class="rank-card" onclick="bukaRaport('${jsAttr(m.st.nama)}')">
+      <div class="rank-avatar" style="background:${rankColor(i)}">${i<3?['🥇','🥈','🥉'][i]:initials(m.st.nama)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${m.st.nama||'—'}</div>
+        <div class="rank-tags">
+          <span class="rtag rtag-g">📖 ${m.hal} hal baru</span>
+          <span class="rtag rtag-b">🔄 ${m.muroj}x muroja'ah</span>
+          ${m.tasmi?`<span class="rtag rtag-p">🎤 ${m.tasmi} tasmi'</span>`:''}
+          <span class="rtag rtag-m">📅 ${m.hari.size} hari</span>
+          ${labelJuara.map(l=>`<span class="rtag ${l.cls}">${l.txt}</span>`).join('')}
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Hafalan Baru${isPekan?' (relatif thd tertinggi pekan ini)':''}</div>
+        <div class="bar-wrap">
+          <div class="bar-bg"><div class="bar-fill bar-baru" style="width:${pctHal}%"></div></div>
+          <span style="font-size:.65rem;color:var(--g1);font-weight:700">${pctHal}%</span>
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Muroja'ah</div>
+        <div class="bar-wrap">
+          <div class="bar-bg"><div class="bar-fill" style="width:${pctMuroj}%;background:linear-gradient(90deg,var(--blue),#3b82f6)"></div></div>
+          <span style="font-size:.65rem;color:var(--blue);font-weight:700">${m.muroj}x</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══ RAPORT ══ */
+function bukaRaport(nama){
+  if(!nama)return;
+  const st=santriDB.find(s=>s.nama===nama)||{nama,targetHal:50};
+  const ms=setoranDB
+    .filter(s=>String(s.nama||'').toLowerCase().trim()===nama.toLowerCase().trim())
+    .map(s=>({...s, kat:normalizeKat(s.kat), halaqah:normalizeHalaqah(s.halaqah)}));
+  const halBaruExplicit=ms.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.hal)||0),0);
+  const barBaru=ms.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.baris)||0),0);
+  const halBaru=halBaruExplicit+Math.floor(barBaru/15); // baris yg terakumulasi lintas sesi ikut dihitung jadi halaman
+  const sesiBaru=ms.filter(s=>s.kat==='Hafalan Baru').length;
+  const sesiMuroj=ms.filter(s=>s.kat==='Murajaah').length;
+  const sesiTasmi=ms.filter(s=>s.kat==="Tasmi'").length;
+  const hariAktif=new Set(ms.map(s=>String(s.tgl||'').split('T')[0]).filter(Boolean)).size;
+  const wkMap={};
+  ms.forEach(s=>{
+    const wk=isoWeek(s.tgl);if(!wk)return;
+    if(!wkMap[wk])wkMap[wk]={hal:0,baris:0,muroj:0,tasmi:0,juzList:[]};
+    const w=wkMap[wk];
+    if(s.kat==='Murajaah'){w.muroj++;if(s.murJuz)w.juzList.push(s.murJuz);}
+    else if(s.kat==="Tasmi'")w.tasmi++;
+    else{w.hal+=(Number(s.hal)||0);w.baris+=(Number(s.baris)||0);}
+  });
+  const weeks=Object.keys(wkMap).sort().reverse();
+  const allJuz=ms.filter(s=>s.kat==='Murajaah'&&s.murJuz).map(s=>s.murJuz);
+  const juzVariasi=new Set(allJuz).size;
+  const tH=Number(st.targetHal||50)||50;
+  const pctHal=Math.min(100,Math.round((halBaru/tH)*100));
+  const avgHal=weeks.length?(halBaru/weeks.length).toFixed(1):'—';
+  const mp=hitungSemuaStats();
+  const maxMuroj=Math.max(...Object.values(mp).map(m=>m.muroj),1);
+  const pctMuroj=Math.min(100,Math.round((sesiMuroj/maxMuroj)*100));
+  const juara=hitungJuara(mp);
+  const labelJuara=getLabelJuara(nama,juara);
+  const thisWeek=isoWeek(today());
+  const wkData=wkMap[thisWeek];
+  const pekanAlert=wkData
+    ?wkData.hal===0&&wkData.muroj>0
+      ?`<div class="pekan-alert warn">⚠️ <div>Pekan ini aktif ${wkData.muroj}x muroja'ah tapi belum ada hafalan baru.</div></div>`
+      :`<div class="pekan-alert info">📅 <div>Pekan ini: +${wkData.hal} hal baru, ${wkData.muroj}x muroja'ah.</div></div>`
+    :`<div class="pekan-alert info">📅 <div>Belum ada setoran pekan ini.</div></div>`;
+  const polaMuroj=allJuz.length===0?'Belum ada data'
+    :juzVariasi>=3?`Variatif (${juzVariasi} area berbeda)`
+    :`Konsisten — ${[...new Set(allJuz)].slice(0,4).join(', ')}`;
+  const recent=[...ms].sort((a,b)=>String(b.tgl||'').localeCompare(String(a.tgl||''))).slice(0,15);
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+
+  $('raportContent').innerHTML=`
+    <div style="background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-radius:14px;padding:20px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:1.3rem;font-weight:700">${initials(st.nama)}</div>
+        <div>
+          <div style="font-size:1.1rem;font-weight:700">${st.nama}</div>
+          <div style="font-size:.78rem;opacity:.85">${st.semester||HALAQAH}</div>
+          ${labelJuara.length?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${labelJuara.map(l=>`<span style="background:rgba(255,255,255,.2);border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:700">${l.txt}</span>`).join('')}</div>`:''}
+        </div>
+        <button onclick="closeRaport()" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#fff;font-size:1rem">✕</button>
+      </div>
+    </div>
+    ${pekanAlert}
+    <div class="card">
+      <div class="card-head">📍 Posisi Hafalan</div>
+      <div class="card-body">
+        <div class="pos-card a"><div class="pos-lbl">POSISI AWAL SEMESTER</div><div class="pos-val">Halaman ${st.posisiHal||1}, Baris ${st.posisiBaris||0}</div></div>
+        <div class="pos-card b" style="margin-top:8px"><div class="pos-lbl">POSISI TERKINI</div><div class="pos-val">Halaman ${Number(st.posisiHal||1)+halBaru}, Baris ${barBaru%15}</div>
+          <div style="font-size:.72rem;opacity:.8;margin-top:2px">+${halBaru} hal ${barBaru%15} brs hafalan baru</div>
+        </div>
+        ${st.juzList?`<div class="drow" style="margin-top:8px"><span class="dlbl">📖 Juz yang sudah dihafal</span><span class="dval">${st.juzList}</span></div>`:''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📊 Statistik Total</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div class="stat-box"><div class="stat-val">${halBaru}</div><div class="stat-lbl">Hal Baru</div></div>
+          <div class="stat-box"><div class="stat-val blue">${sesiMuroj}</div><div class="stat-lbl">Muroja'ah</div></div>
+          <div class="stat-box"><div class="stat-val purple">${sesiTasmi}</div><div class="stat-lbl">Tasmi'</div></div>
+          <div class="stat-box"><div class="stat-val">${sesiBaru}</div><div class="stat-lbl">Sesi Baru</div></div>
+          <div class="stat-box"><div class="stat-val gold">${hariAktif}</div><div class="stat-lbl">Hari Aktif</div></div>
+          <div class="stat-box"><div class="stat-val">${avgHal}</div><div class="stat-lbl">Hal/Pekan</div></div>
+        </div>
+        <div class="drow"><span class="dlbl">Pola Muroja'ah</span><span class="dval" style="font-size:.75rem">${polaMuroj}</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">🎯 Progress Hafalan Baru</div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-weight:700;color:var(--g1)">${sesiBaru} sesi hafalan baru</span>
+          <span style="font-size:.8rem;color:var(--muted)">${halBaru} halaman</span>
+        </div>
+        <div style="background:#e0e0e8;border-radius:6px;height:10px;overflow:hidden;margin-bottom:4px">
+          <div style="width:${Math.min(100,sesiBaru*5)}%;height:100%;background:linear-gradient(90deg,var(--g1),var(--g2));border-radius:6px"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted)">Makin banyak sesi makin panjang bar — relatif terhadap pencapaian sendiri.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">🔄 Progress Muroja'ah</div>
+      <div class="card-body">
+        <div style="font-size:.8rem;margin-bottom:6px">Makin banyak muroja'ah makin tinggi — relatif terhadap santri lain di halaqah.</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-weight:700;color:var(--blue)">${pctMuroj}% dari tertinggi</span>
+          <span style="font-size:.8rem;color:var(--muted)">${sesiMuroj} sesi</span>
+        </div>
+        <div style="background:#e0e0e8;border-radius:6px;height:10px;overflow:hidden;margin-bottom:4px">
+          <div style="width:${pctMuroj}%;height:100%;background:linear-gradient(90deg,var(--blue),#3b82f6);border-radius:6px"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted)">Tertinggi di halaqah: ${maxMuroj} sesi</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📅 Rekap Per Pekan</div>
+      <div class="card-body">
+        ${weeks.length?`<table class="wtable">
+          <thead><tr><th>Pekan</th><th>Hal</th><th>Brs</th><th>Muroj</th><th>Tasmi</th></tr></thead>
+          <tbody>${weeks.map(wk=>`<tr>
+            <td style="white-space:nowrap;font-size:.72rem">${weekLabel(wk)}</td>
+            <td><strong style="color:var(--g1)">${wkMap[wk].hal}</strong></td>
+            <td>${wkMap[wk].baris}</td>
+            <td style="color:var(--blue)">${wkMap[wk].muroj}</td>
+            <td style="color:var(--purple)">${wkMap[wk].tasmi}</td>
+          </tr>`).join('')}</tbody>
+        </table>`:'<p style="text-align:center;color:var(--muted);font-size:.8rem;padding:16px">Belum ada data</p>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📋 Riwayat Setoran Terakhir</div>
+      ${recent.length?recent.map(s=>`
+        <div class="setor-card" style="border-radius:0;border:none;border-bottom:1px solid #f0e8da;box-shadow:none;margin:0">
+          <div class="setor-avatar ${katAvClass(s.kat)}" style="width:36px;height:36px;font-size:.78rem">${initials(s.nama)}</div>
+          <div class="setor-info">
+            <div class="setor-name" style="font-size:.82rem"><span class="badge ${katBadge(s.kat)}">${s.kat}</span></div>
+            <div class="setor-surah">${surahAyatText(s)}${s.murJuz?` · 📍${s.murJuz}`:''}</div>
+            ${s.kat==='Hafalan Baru'&&(Number(s.hal)||Number(s.baris))?`<div class="setor-meta" style="color:var(--g1);font-weight:600">+${[Number(s.hal)?Number(s.hal)+' hal':'',Number(s.baris)?Number(s.baris)+' brs':''].filter(Boolean).join(' ')}</div>`:''}
+          </div>
+          <div class="setor-meta" style="font-size:.7rem;color:var(--muted)">${fmtDate(s.tgl)}</div>
+        </div>`).join('')
+      :'<div style="text-align:center;padding:20px;color:var(--muted);font-size:.82rem">Belum ada setoran</div>'}
+    </div>
+    <div style="text-align:center;padding:12px 0;color:var(--muted);font-size:.7rem">${HALAQAH} · ${tglCetak}</div>
+    <div style="display:flex;gap:8px;padding-bottom:16px">
+      <button class="btn btn-primary" style="flex:2" onclick="printSyahadah('${jsAttr(nama)}')">🖨️ Cetak Syahadah</button>
+      <button class="btn btn-outline btn-sm" onclick="printRiwayat('${jsAttr(nama)}')">📋 Print Riwayat</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDel('santri_nama','${jsAttr(st.nama)}','${jsAttr('data santri '+st.nama)}')">🗑️</button>
+    </div>
+  `;
+  $('raportPage').classList.add('open');
+}
+
+function printSyahadah(nama){
+  const st=santriDB.find(s=>s.nama===nama)||{nama};
+  const ms=setoranDB.filter(s=>String(s.nama||'').toLowerCase().trim()===nama.toLowerCase().trim())
+    .map(s=>({...s,kat:normalizeKat(s.kat)}));
+  const halBaru=ms.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.hal)||0),0);
+  const sesiBaru=ms.filter(s=>s.kat==='Hafalan Baru').length;
+  const sesiMuroj=ms.filter(s=>s.kat==='Murajaah').length;
+  const sesiTasmi=ms.filter(s=>s.kat==="Tasmi'").length;
+  const hariAktif=new Set(ms.map(s=>String(s.tgl||'').split('T')[0]).filter(Boolean)).size;
+  const mp=hitungSemuaStats();
+  const juara=hitungJuara(mp);
+  const labelJuara=getLabelJuara(nama,juara);
+  const hTerakhir=[...ms].filter(s=>s.kat==='Hafalan Baru').sort((a,b)=>String(b.tgl||'').localeCompare(String(a.tgl||'')))[0];
+  const mTerakhir=[...ms].filter(s=>s.kat==='Murajaah').sort((a,b)=>String(b.tgl||'').localeCompare(String(a.tgl||'')))[0];
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+
+  // Encode logo sebagai base64 (sudah embedded)
+  const logoB64=window._logoYaumi||'';
+
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"/>
+  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    @page{size:A4;margin:0}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Cormorant Garamond',serif;color:#3d1f00;background:#fff;width:210mm;height:297mm;overflow:hidden}
+    .page-wrap{width:210mm;height:297mm;padding:9mm 11mm 8mm 11mm;position:relative;background:#fffdf7;display:flex;flex-direction:column}
+    .border-outer{position:absolute;inset:6mm;border:2.5px solid #8B4513;pointer-events:none}
+    .border-inner{position:absolute;inset:9mm;border:1px solid #c8963e;pointer-events:none}
+    .corner{position:absolute;font-size:18px;color:#8B4513;line-height:1}
+    .corner.tl{top:3mm;left:3mm}
+    .corner.tr{top:3mm;right:3mm}
+    .corner.bl{bottom:3mm;left:3mm;transform:scaleY(-1)}
+    .corner.br{bottom:3mm;right:3mm;transform:scale(-1)}
+    .content{position:relative;z-index:1;padding:4mm 8mm;flex:1;display:flex;flex-direction:column}
+
+    /* KOP */
+    .kop{text-align:center;padding-bottom:3.5mm;margin-bottom:3mm;border-bottom:2.5px solid #8B4513}
+    .logo-img{width:18mm;height:18mm;object-fit:contain;background:transparent}
+    .kop-ponpes{font-family:'Cinzel',serif;font-size:13pt;font-weight:700;color:#8B4513;letter-spacing:2px;line-height:1.3;text-transform:uppercase}
+    .kop-ponpes2{font-family:'Cinzel',serif;font-size:8pt;font-weight:600;color:#5a3000;letter-spacing:3px;margin-top:0.5mm;text-transform:uppercase}
+    .kop-separator{font-size:8pt;color:#c8963e;margin:1.5mm 0 1mm;font-style:italic;letter-spacing:1px}
+    .kop-alamat{font-size:7pt;color:#7a5500;line-height:1.5;max-width:150mm;margin:0 auto}
+
+    /* ARABIC TITLE */
+    .title-line{display:flex;align-items:center;gap:3mm;margin:2mm 0}
+    .title-line-bar{flex:1;height:1px;background:linear-gradient(to right,transparent,#8B4513)}
+    .title-line-bar.rev{background:linear-gradient(to left,transparent,#8B4513)}
+    .title-diamond{font-size:8pt;color:#c8963e}
+    .arabic-syahadah{font-family:'Scheherazade New',serif;font-size:26pt;font-weight:700;color:#8B4513;text-align:center;direction:rtl;line-height:1.3;margin:1mm 0 0}
+    .arabic-title{font-family:'Scheherazade New',serif;font-size:17pt;color:#3d1f00;text-align:center;direction:rtl;margin:0;line-height:1.3}
+    .arabic-sub{font-family:'Scheherazade New',serif;font-size:10pt;color:#c8963e;text-align:center;direction:rtl;margin-bottom:1mm}
+
+    /* NAMA */
+    .kepada-lbl{text-align:center;font-size:7.5pt;color:#7a5500;letter-spacing:2px;text-transform:uppercase;margin:2mm 0 1mm}
+    .nama-penerima{text-align:center;font-family:'Cinzel',serif;font-size:18pt;font-weight:600;color:#3d1f00;border-bottom:1.5px solid #8B4513;display:block;padding-bottom:0.5mm}
+    .nama-sub{text-align:center;font-size:8pt;color:#7a5500;margin-top:0.5mm}
+
+    /* JUARA */
+    .juara-wrap{display:flex;justify-content:center;flex-wrap:wrap;gap:1.5mm;margin:1.5mm 0}
+    .jtag{padding:1mm 4mm;border-radius:2px;font-size:7pt;font-weight:600}
+    .jtag.gr{background:#e8f5ee;color:#1e6b4f;border:1px solid #1e6b4f}
+    .jtag.bl{background:#e8f0fe;color:#1a56c4;border:1px solid #1a56c4}
+    .jtag.pu{background:#ede9fe;color:#7c3aed;border:1px solid #7c3aed}
+
+    /* BADAN */
+    .body-text{font-size:9.5pt;line-height:1.85;color:#3d1f00;text-align:justify;margin:2mm 0;padding:2.5mm 4mm;border-left:3px solid #c8963e;background:rgba(200,150,62,.05);border-radius:0 3px 3px 0}
+    .body-text strong{color:#8B4513}
+    .isian{display:inline-block;border-bottom:1.5px solid #8B4513;min-width:22mm;text-align:center}
+
+    /* PREDIKAT */
+    .predikat-wrap{text-align:center;margin:2mm 0}
+    .predikat-lbl{font-size:7.5pt;color:#7a5500;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm}
+    .predikat-val{font-family:'Cinzel',serif;font-size:11pt;color:#8B4513;border:1.5px solid #c8963e;display:inline-block;padding:1mm 6mm;border-radius:2px;min-width:90mm;letter-spacing:1px}
+
+    /* DOA */
+    .doa-box{margin:2mm 0;padding:2.5mm 4mm;border:1px solid #e0c090;border-radius:3px;background:rgba(200,150,62,.03);text-align:center}
+    .doa-ar{font-family:'Scheherazade New',serif;font-size:13pt;color:#8B4513;direction:rtl;line-height:1.5;margin-bottom:1mm}
+    .doa-id{font-size:8pt;font-style:italic;color:#5a3000;line-height:1.6}
+
+    /* NASIHAT */
+    .nasihat-wrap{margin:1.5mm 0}
+    .nasihat-item{margin-bottom:1.5mm;padding:1.5mm 3mm;border-left:2px solid #8B4513;background:rgba(139,69,19,.04)}
+    .nasihat-text{font-size:8pt;font-style:italic;line-height:1.6;color:#3d1f00}
+    .nasihat-src{font-size:6.5pt;color:#8B4513;font-weight:600;margin-top:0.5mm}
+
+    /* JAZAK */
+    .jazak{text-align:center;margin:1.5mm 0}
+    .jazak-ar{font-family:'Scheherazade New',serif;font-size:13pt;color:#8B4513;direction:rtl;line-height:1.4}
+    .jazak-id{font-size:7pt;color:#7a5500;font-style:italic;margin-top:0.5mm}
+
+    /* TTD */
+    .ttd-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:4mm}
+    .ttd-item{text-align:center}
+    .ttd-lbl{font-size:7.5pt;color:#5a3000;margin-bottom:22mm}
+    .ttd-line{border-top:1px solid #3d1f00;padding-top:2mm;font-size:8pt;font-weight:600;color:#3d1f00}
+    .ttd-jabatan{font-size:7pt;color:#7a5500}
+
+    @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body,html{width:210mm;height:297mm;overflow:hidden}}
+  </style></head><body>
+  <div class="page-wrap">
+    <div class="border-outer"></div>
+    <div class="border-inner"></div>
+    <div class="corner tl">✦</div>
+    <div class="corner tr">✦</div>
+    <div class="corner bl">✦</div>
+    <div class="corner br">✦</div>
+
+    <div class="content">
+      <!-- KOP -->
+      <div class="kop">
+        <img class="logo-img" src="${logoB64}" style="background:transparent;display:block;margin:0 auto 2mm"/>
+        <div class="kop-ponpes">PONDOK PESANTREN YAUMI</div>
+        <div class="kop-ponpes2">YAYASAN AMANAH UMAT MULIA</div>
+        <div class="kop-separator">— Halaqah Tahfidz Ustadz Restu Bumi —</div>
+        <div class="kop-alamat">Jl. Sokonilo-Semingin, Semingin, Sumbersari, Kec. Moyudan, Kab. Sleman, D.I. Yogyakarta 55563</div>
+      </div>
+
+      <!-- ARABIC TITLE -->
+      <div class="arabic-syahadah">شَهَادَة</div>
+      <div class="arabic-title">تَحْفِيظُ الْقُرْآنِ الْكَرِيمِ</div>
+      <div class="arabic-sub">فِي حَلَقَةِ الْأُسْتَاذِ رِسْتُو بُومِي</div>
+      <div class="title-line">
+        <div class="title-line-bar"></div>
+        <div class="title-diamond">❖</div>
+        <div class="title-line-bar rev"></div>
+      </div>
+
+      <!-- NAMA -->
+      <div class="kepada-lbl">Diberikan dengan hormat kepada</div>
+      <div class="nama-penerima">${st.nama}</div>
+      <div class="nama-sub">${st.semester||''}</div>
+
+      ${labelJuara.length?`<div class="juara-wrap">${labelJuara.map(l=>{
+        const c=l.cls==='rtag-g'?'gr':l.cls==='rtag-b'?'bl':'pu';
+        return'<span class="jtag '+c+'">'+l.txt+'</span>';
+      }).join('')}</div>`:''}
+
+      <!-- BADAN -->
+      <div class="body-text">
+        Yang bersangkutan telah <strong>menyelesaikan program Halaqah Tahfidz Ustadz Restu Bumi</strong>
+        di <strong>Pondok Pesantren YAUMI Yogyakarta</strong>, dengan perolehan hafalan mencapai
+        <span class="isian">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> Juz
+        <span class="isian">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> Halaman.<br><br>
+        Dengan ini kami memberikan predikat kepada Ananda selama
+        <strong>${hariAktif} hari aktif</strong> dengan total
+        <strong>${sesiBaru} sesi hafalan baru</strong> dan
+        <strong>${sesiMuroj} sesi muroja'ah</strong>${sesiTasmi?' serta <strong>'+sesiTasmi+' sesi tasmi\'</strong>':''}.
+      </div>
+
+      <!-- PREDIKAT -->
+      <div class="predikat-wrap">
+        <div class="predikat-lbl">Predikat</div>
+        <div class="predikat-val">&nbsp;</div>
+      </div>
+
+      <!-- DOA -->
+      <div class="doa-box">
+        <div class="doa-ar">اللَّهُمَّ ارْزُقْنَا حِفْظَ كِتَابِكَ وَفَهْمَهُ وَالْعَمَلَ بِهِ</div>
+        <div class="doa-id">Ya Allah, anugerahkanlah kepada Ananda kemampuan menghafal, memahami, dan mengamalkan Kitab-Mu.<br>
+        Jadikanlah Al-Qur'an sebagai cahaya hati, penawar duka, dan syafaat di hari kiamat. Aamiin.</div>
+      </div>
+
+      <!-- NASIHAT -->
+      <div class="nasihat-wrap">
+        <div class="nasihat-item">
+          <div class="nasihat-text">"Jagalah Al-Qur'an ini. Demi Dzat yang jiwa Muhammad berada di tangan-Nya, sungguh ia lebih cepat lepas daripada unta dari ikatannya."</div>
+          <div class="nasihat-src">— Rasulullah ﷺ (HR. Bukhari &amp; Muslim)</div>
+        </div>
+        <div class="nasihat-item">
+          <div class="nasihat-text">"Saat manusia tidur ia bangun, saat manusia lalai ia berdzikir, dan saat manusia sibuk dunia ia sibuk dengan Al-Qur'an."</div>
+          <div class="nasihat-src">— Abdullah bin Mas'ud radhiyallahu 'anhu</div>
+        </div>
+      </div>
+
+      <!-- JAZAK -->
+      <div class="jazak">
+        <div class="jazak-ar">جَزَاكُمُ اللهُ خَيْرًا كَثِيرًا</div>
+        <div class="jazak-id">Semoga Allah membalas dengan kebaikan yang berlipat ganda</div>
+      </div>
+
+      <!-- TTD -->
+      <div class="ttd-wrap">
+        <div class="ttd-item">
+          <div class="ttd-lbl">Santri,</div>
+          <div class="ttd-line">${st.nama}</div>
+        </div>
+        <div class="ttd-item">
+          <div class="ttd-lbl">Yogyakarta, ${tglCetak}</div>
+          <div class="ttd-line">Restu Bumi</div>
+          <div class="ttd-jabatan">Muhafizh Halaqah</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){toast('Gagal buka tab print. Izinkan popup untuk situs ini di pengaturan browser.','err',6000);return;}
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(),800);
+}
+
+function printRiwayat(nama){
+  const st=santriDB.find(s=>s.nama===nama)||{nama};
+  const ms=setoranDB
+    .filter(s=>String(s.nama||'').toLowerCase().trim()===nama.toLowerCase().trim())
+    .map(s=>({...s,kat:normalizeKat(s.kat)}))
+    .sort((a,b)=>String(b.tgl||'').localeCompare(String(a.tgl||'')));
+
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const halBaruExplicit=ms.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.hal)||0),0);
+  const barisTotalRiwayat=ms.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.baris)||0),0);
+  const halBaru=halBaruExplicit+Math.floor(barisTotalRiwayat/15);
+  const sesiMuroj=ms.filter(s=>s.kat==='Murajaah').length;
+  const sesiBaru=ms.filter(s=>s.kat==='Hafalan Baru').length;
+
+  const rows = ms.map((s,i)=>{
+    const bg = i%2===0 ? '#fffdf7' : '#fff';
+    const katColor = s.kat==='Hafalan Baru' ? '#1e6b4f' : s.kat==='Murajaah' ? '#1a56c4' : '#c8963e';
+    // Surah & ayat lengkap, termasuk lintas surah (surah2/ayat2)
+    const surahText = surahAyatText(s);
+    // Keterangan: untuk Hafalan Baru tampilkan halaman DAN baris (walau belum genap 1 halaman)
+    let ket = '—';
+    if(s.kat==='Hafalan Baru'){
+      const halNum = Number(s.hal)||0;
+      const barisNum = Number(s.baris)||0;
+      const parts=[];
+      if(halNum) parts.push(halNum+' hal');
+      if(barisNum) parts.push(barisNum+' brs');
+      ket = parts.length ? parts.join(' ') : '0 hal';
+    } else if(s.kat==='Murajaah'){
+      ket = s.murJuz || '—';
+    }
+    return `<tr style="background:${bg}">
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt;color:#555">${i+1}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt;white-space:nowrap">${fmtDatePrint(s.tgl)}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt;color:${katColor};font-weight:600">${s.kat}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt">${surahText}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt;color:#555">${s.halaqah||'—'}</td>
+      <td style="padding:4px 6px;border-bottom:1px solid #e0d4c0;font-size:8pt;text-align:center;color:#1e6b4f;font-weight:600">${ket}</td>
+    </tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"/>
+  <style>
+    @page{size:A4;margin:15mm 12mm}
+    body{font-family:'Times New Roman',serif;color:#1a1a1a;font-size:9pt}
+    .kop{border-bottom:2px solid #8B4513;padding-bottom:10px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+    .kop-logo{width:16mm;height:16mm;object-fit:contain;flex-shrink:0}
+    .kop-text{flex:1}
+    .kop-ponpes{font-size:13pt;font-weight:bold;color:#8B4513;letter-spacing:1px;line-height:1.3}
+    .kop-sub{font-size:8pt;color:#555;margin-top:2px;line-height:1.5}
+    h3{font-family:'Times New Roman',serif;font-size:10pt;font-weight:bold;margin:10px 0 6px;color:#3d1f00;border-bottom:1px solid #c8963e;padding-bottom:3px}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;font-size:8.5pt;font-family:'Times New Roman',serif}
+    .info-item{display:flex;gap:4px}
+    .info-lbl{color:#7a5500;min-width:80px}
+    .info-val{font-weight:600}
+    table{width:100%;border-collapse:collapse;font-family:'Times New Roman',serif}
+    thead tr{background:#8B4513;color:#fff}
+    th{padding:5px 6px;text-align:left;font-size:8pt;font-weight:600;font-family:'Times New Roman',serif}
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+    .sum-box{border:1px solid #c8963e;border-radius:3px;padding:6px;text-align:center;font-family:'Times New Roman',serif}
+    .sum-val{font-size:14pt;font-weight:bold;color:#8B4513}
+    .sum-lbl{font-size:7pt;color:#7a5500;text-transform:uppercase}
+    .footer{margin-top:16px;text-align:right;font-size:8pt;color:#555;font-family:'Times New Roman',serif}
+  </style></head><body>
+  <div class="kop">
+    <img class="kop-logo" src="${window._logoYaumi||''}"/>
+    <div class="kop-text">
+      <div class="kop-ponpes">PONDOK PESANTREN YAUMI</div>
+      <div class="kop-sub">Riwayat Setoran Santri — Halaqah Tahfidz Ustadz Restu Bumi</div>
+      <div class="kop-sub">Jl. Sokonilo-Semingin, Semingin, Sumbersari, Kec. Moyudan, Kab. Sleman, D.I. Yogyakarta 55563</div>
+    </div>
+  </div>
+  <h3>Data Santri</h3>
+  <div class="info-grid">
+    <div class="info-item"><span class="info-lbl">Nama</span><span class="info-val">: ${st.nama}</span></div>
+    <div class="info-item"><span class="info-lbl">Semester</span><span class="info-val">: ${st.semester||'—'}</span></div>
+    <div class="info-item"><span class="info-lbl">Total Setoran</span><span class="info-val">: ${ms.length} sesi</span></div>
+    <div class="info-item"><span class="info-lbl">Dicetak</span><span class="info-val">: ${tglCetak}</span></div>
+  </div>
+  <h3>Riwayat Setoran Lengkap</h3>
+  <table>
+    <thead><tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Surah / Ayat</th><th>Waktu</th><th>Ket.</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6" style="text-align:center;padding:12px;color:#aaa">Belum ada data setoran</td></tr>'}</tbody>
+  </table>
+  <div class="summary">
+    <div class="sum-box"><div class="sum-val">${sesiBaru}</div><div class="sum-lbl">Sesi Hafalan Baru</div></div>
+    <div class="sum-box"><div class="sum-val" style="color:#1a56c4">${sesiMuroj}</div><div class="sum-lbl">Sesi Muroja'ah</div></div>
+    <div class="sum-box"><div class="sum-val">${halBaru}</div><div class="sum-lbl">Total Halaman Baru</div></div>
+  </div>
+  <div class="footer">Halaqah Tahfidz Ustadz Restu Bumi · PP YAUMI Yogyakarta · ${tglCetak}</div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){toast('Gagal buka tab print. Izinkan popup untuk situs ini di pengaturan browser.','err',6000);return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+function closeRaport(){$('raportPage').classList.remove('open');}
+function printRaport(nama){if(!nama)return;bukaRaport(nama);}
+
+
+/* ══ SANTRI ══ */
+function populateSantriDrop(){
+  const sel=$('s_nama');const prev=sel.value;
+  sel.innerHTML='<option value="">— Pilih —</option>'+[...santriDB].sort((a,b)=>(a.nama||'').localeCompare(b.nama||'')).map(s=>`<option value="${s.nama}"${s.nama===prev?' selected':''}>${s.nama}</option>`).join('');
+}
+function renderSantriList(){
+  const el=$('santriList');
+  if(!santriDB.length){el.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Belum ada santri.<br>Tap tombol di bawah untuk menambah.</p></div>';return;}
+  const wkStats=hitungStatsPekanIni();
+  const allStats=hitungSemuaStats(); // total halaman hasil setoran sejak awal (baris sudah dikonversi ke halaman)
+  const wkLabel=weekLabel(isoWeek(today()));
+  el.innerHTML=santriDB.map(s=>{
+    const juzAwal=Number(s.juzDimiliki||s.posisiJuz||0);
+    const halAwal=Number(s.halDimiliki||s.posisiHal||0);
+    const stat=allStats[s.nama]||{hal:0};
+    // POSISI SAAT INI = baseline (juz+hal sebelum masuk halaqah) + total halaman hasil setoran s.d. sekarang.
+    // 1 Juz = 20 halaman Madinah, jadi kalau kelebihan 20 halaman otomatis "naik" jadi +1 juz.
+    const totalHalGabung=halAwal+stat.hal;
+    const juzSaatIni=juzAwal+Math.floor(totalHalGabung/20);
+    const halSaatIni=totalHalGabung%20;
+
+    const wk=wkStats[s.nama]||{hal:0,muroj:0,tasmi:0,sesiNew:0,hari:new Set()};
+    const juzTambah=Math.floor(wk.hal/20);
+    const sisaHalTambah=wk.hal%20;
+    const adaAktivitas=wk.hal>0||wk.muroj>0||wk.tasmi>0;
+    const weeklyBadge=adaAktivitas
+      ?`<div style="font-size:.7rem;color:var(--g1);margin-top:6px;font-weight:600;background:var(--g3);border-radius:6px;padding:4px 8px;display:inline-block">
+          🌱 Pekan ini: +${juzTambah>0?juzTambah+' juz '+sisaHalTambah+' hal':wk.hal+' hal'}
+          ${wk.muroj?` · 🔄 ${wk.muroj}x muroja'ah`:''}${wk.tasmi?` · 🎤 ${wk.tasmi}x tasmi'`:''}
+        </div>`
+      :`<div style="font-size:.7rem;color:var(--muted);margin-top:6px">Belum ada setoran pekan ini (${wkLabel})</div>`;
+    return`<div class="rank-card" onclick="bukaRaport('${jsAttr(s.nama)}')" style="align-items:flex-start">
+      <div class="rank-avatar" style="background:linear-gradient(135deg,var(--g1),var(--g2))">${initials(s.nama)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${s.nama}</div>
+        <div class="rank-tags">
+          <span class="rtag rtag-m">${s.semester||'—'}</span>
+          <span class="rtag rtag-g">📗 ${juzSaatIni} Juz ${halSaatIni} Hal (saat ini)</span>
+          ${s.juzList?`<span class="rtag rtag-b">📖 Juz ${s.juzList}</span>`:''}
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:3px">Awal: ${juzAwal} juz ${halAwal} hal + ${stat.hal} hal dari hasil setoran</div>
+        ${weeklyBadge}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openSantriSheet('${jsAttr(s.id)}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDel('santri','${jsAttr(s.id)}','${jsAttr('data santri '+s.nama)}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openSantriSheet(id=null){
+  editSantriId=id;
+  const d=id?santriDB.find(s=>String(s.id)===String(id)):null;
+  $('titSantri').textContent=d?'Edit Santri':'Tambah Santri';
+  $('st_nama').value=d?.nama||'';
+  $('st_sem').value=d?.semester||'';
+  $('st_juz').value=d?.juzDimiliki??d?.posisiJuz??0;
+  $('st_hal').value=d?.halDimiliki??d?.posisiHal??0;
+  $('st_juzList').value=d?.juzList||'';
+  openSheet('sheetSantri');
+}
+function saveSantri(){
+  const nama=$('st_nama').value.trim();if(!nama){toast('Nama wajib diisi','err');return;}
+  const d={
+    id:editSantriId||uid(),
+    nama,
+    semester:$('st_sem').value.trim(),
+    juzDimiliki:Number($('st_juz').value)||0,
+    halDimiliki:Number($('st_hal').value)||0,
+    juzList:$('st_juzList').value.trim()
+  };
+  if(editSantriId){const i=santriDB.findIndex(s=>String(s.id)===String(editSantriId));if(i!==-1)santriDB[i]=d;else santriDB.push(d);}
+  else santriDB.push(d);
+  saveLocal();renderAll();closeSheet('sheetSantri');
+  toast(editSantriId?'Santri diperbarui ✓':'Santri ditambahkan ✓');
+  editSantriId=null;
+  // Push ke Firestore langsung
+  if(navigator.onLine) fsSave('santri', String(d.id), d).catch(e=>{
+    console.error('Gagal sync santri:',e);
+    toast('Tersimpan di HP, tapi gagal sync ke cloud ('+e.message+'). Akan dicoba lagi otomatis saat sync berikutnya.','err',7000);
+  });
+}
+
+/* ══ SETORAN ══ */
+function openSetoranSheet(data=null){
+  editSetoranId=data?.id||null;
+  $('titSetor').textContent=data?'Edit Setoran':'Tambah Setoran';
+  populateSantriDrop();
+  $('s_tgl').value=data?String(data.tgl||'').split('T')[0]:today();
+  updateTglHari();
+  $('s_waktu').value=data?.halaqah||"Ba'da Shubuh";
+  $('s_nama').value=data?.nama||'';
+  $('s_kat').value=data?.kat||'Hafalan Baru';
+  $('s_surah').value=data?.surah||'';
+  $('s_ayat').value=data?.ayat||'';
+  currentSegments = data ? getSegments(data).map(s=>({surah:s.surah||'',ayat:s.ayat||''})) : [];
+  renderSegments();
+  $('s_hal').value=data?.hal||0;
+  $('s_baris').value=data?.baris||0;
+  $('s_murJuz').value=data?.murJuz||'';
+  onKatChange();
+  openSheet('sheetSetoran');
+}
+function editSetoran(id){const d=setoranDB.find(s=>String(s.id)===String(id));if(d)openSetoranSheet(d);}
+
+function saveSetoran(){
+  const nama=$('s_nama').value,surah=$('s_surah').value.trim(),ayat=$('s_ayat').value.trim();
+  if(!nama||!surah){toast('Nama dan surah wajib diisi','err');return;}
+  const segmentsClean=currentSegments
+    .filter(sg=>sg.surah&&sg.surah.trim())
+    .map(sg=>({surah:sg.surah.trim(),ayat:(sg.ayat||'').trim()}));
+  const d={
+    id:editSetoranId||uid(),tgl:$('s_tgl').value,
+    nama,halaqah:$('s_waktu').value,kat:$('s_kat').value,
+    surah,ayat,
+    segmentsJson:JSON.stringify(segmentsClean),
+    hal:Number($('s_hal').value)||0,baris:Number($('s_baris').value)||0,
+    murJuz:$('s_murJuz').value.trim()
+  };
+  if(editSetoranId){const i=setoranDB.findIndex(s=>String(s.id)===String(editSetoranId));if(i!==-1)setoranDB[i]=d;else setoranDB.push(d);}
+  else setoranDB.push(d);
+  saveLocal();renderAll();closeSheet('sheetSetoran');
+  toast(editSetoranId?'Setoran diperbarui ✓':'Setoran disimpan ✓');
+  editSetoranId=null;
+  currentSegments=[];
+  // Push ke Firestore langsung tanpa tunggu
+  if(navigator.onLine) fsSave('setoran', String(d.id), d).catch(e=>{
+    console.error('Gagal sync setoran:',e);
+    toast('Tersimpan di HP, tapi gagal sync ke cloud ('+e.message+'). Akan dicoba lagi otomatis saat sync berikutnya.','err',7000);
+  });
+}
+
+/* ══ DELETE ══ */
+function confirmDel(type,id,label){
+  $('confirmMsg').textContent='Yakin hapus '+label+'? Tidak dapat dibatalkan.';
+  $('btnConfirm').onclick=()=>doDel(type,id);
+  openSheet('sheetConfirm');
+}
+
+/* ══ FIX: hapus santri sekarang JUGA menghapus semua setoran atas nama
+   santri tersebut (lokal & Firestore), supaya tidak nongol lagi sebagai
+   entry "orphan" di Rekap/Raport. Sebelumnya hanya data santri yang
+   terhapus, sedangkan setoran-setoran lamanya tetap tersisa. ══ */
+async function doDel(type,id){
+  closeSheet('sheetConfirm');
+  let cloudId=null, col=null;
+  let deletedSetoranIds=[];
+
+  if(type==='setoran'){
+    setoranDB=setoranDB.filter(s=>String(s.id)!==String(id));
+    col='setoran'; cloudId=String(id);
+
+  } else if(type==='santri'){
+    const tgt=santriDB.find(s=>String(s.id)===String(id));
+    santriDB=santriDB.filter(s=>String(s.id)!==String(id));
+    if(tgt){
+      const namaLower=String(tgt.nama||'').toLowerCase().trim();
+      const related=setoranDB.filter(s=>String(s.nama||'').toLowerCase().trim()===namaLower);
+      deletedSetoranIds=related.map(s=>String(s.id));
+      setoranDB=setoranDB.filter(s=>String(s.nama||'').toLowerCase().trim()!==namaLower);
+    }
+    col='santri'; cloudId=String(id);
+
+  } else if(type==='santri_nama'){
+    const namaLower=String(id||'').toLowerCase().trim();
+    const tgt=santriDB.find(s=>s.nama.toLowerCase().trim()===namaLower);
+    const related=setoranDB.filter(s=>String(s.nama||'').toLowerCase().trim()===namaLower);
+    deletedSetoranIds=related.map(s=>String(s.id));
+    setoranDB=setoranDB.filter(s=>String(s.nama||'').toLowerCase().trim()!==namaLower);
+    santriDB=santriDB.filter(s=>s.nama.toLowerCase().trim()!==namaLower);
+    if(tgt){col='santri'; cloudId=String(tgt.id);}
+    closeRaport();
+  }
+
+  saveLocal();renderAll();
+
+  const extra=deletedSetoranIds.length? (' ('+deletedSetoranIds.length+' setoran terkait ikut terhapus)') : '';
+
+  if(!navigator.onLine){
+    toast('Data dihapus di HP ini ✓'+extra+'. Anda offline — saat online lagi, tap "Upload ke Firestore" agar cloud ikut terhapus (kalau tidak, data bisa muncul lagi saat sync).','info',8000);
+    return;
+  }
+  try{
+    if(col && cloudId) await fsDelete(col, cloudId);
+    if(deletedSetoranIds.length) await Promise.all(deletedSetoranIds.map(sid=>fsDelete('setoran', sid)));
+    toast('Data dihapus ✓ (lokal & cloud)'+extra,'ok');
+  }catch(e){
+    console.error('Gagal hapus di Firestore:',e);
+    toast('Data dihapus di HP ini, TAPI GAGAL dihapus di cloud ('+e.message+'). Data ini bisa muncul lagi saat sync — cek aturan keamanan (security rules) Firestore Anda.','err',10000);
+  }
+}
+
+/* ══ REKAP CEPAT ══ */
+function openRekapCepat(){
+  const td=today();
+  const list=setoranDB.filter(s=>String(s.tgl||'').split('T')[0]===td);
+  const hal=list.filter(s=>s.kat==='Hafalan Baru').reduce((a,s)=>a+(Number(s.hal)||0),0);
+  const sudah=new Set(list.map(s=>s.nama));
+  const belum=santriDB.filter(s=>!sudah.has(s.nama)).map(s=>s.nama);
+  $('rekapCepatBody').innerHTML=`
+    <div class="stats-row" style="margin-bottom:12px">
+      <div class="stat-box"><div class="stat-val">${list.length}</div><div class="stat-lbl">Sesi</div></div>
+      <div class="stat-box"><div class="stat-val gold">${hal}</div><div class="stat-lbl">Hal Baru</div></div>
+      <div class="stat-box"><div class="stat-val blue">${sudah.size}</div><div class="stat-lbl">Sudah Setor</div></div>
+    </div>
+    ${belum.length
+      ?`<div style="background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.78rem"><strong style="color:var(--danger)">❌ Belum setor hari ini:</strong><br>${belum.join(', ')}</div>`
+      :'<div style="background:var(--g3);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.78rem;color:var(--g1)">✅ Semua santri sudah setor hari ini!</div>'}
+    ${list.map(s=>`<div class="setor-card" style="margin-bottom:6px">
+      <div class="setor-avatar ${katAvClass(s.kat)}" style="width:36px;height:36px;font-size:.78rem">${initials(s.nama)}</div>
+      <div class="setor-info">
+        <div class="setor-name" style="font-size:.82rem">${s.nama} <span class="badge ${katBadge(s.kat)}">${s.kat}</span></div>
+        <div class="setor-surah">${surahAyatText(s)}</div>
+      </div>
+      <div class="setor-right">${s.kat==='Hafalan Baru'&&s.hal?`<div class="setor-hal">${s.hal}</div><div class="setor-hal-lbl">HAL</div>`:'🔄'}</div>
+    </div>`).join('')||'<div style="text-align:center;color:var(--muted);padding:20px;font-size:.82rem">Belum ada setoran hari ini</div>'}
+  `;
+  openSheet('sheetRekap');
+}
+
+/* ══ LAPORAN ══ */
+function populateLapDropdowns(){
+  const weeks=[...new Set(setoranDB.map(s=>isoWeek(s.tgl)).filter(Boolean))].sort().reverse();
+  const sel=$('lapPekan');const prev=sel.value;
+  sel.innerHTML=weeks.length?weeks.map(w=>`<option value="${w}"${w===prev?' selected':''}>${weekLabel(w)}</option>`).join(''):'<option>Belum ada data</option>';
+  const ssel=$('lapSantriSel');const pprev=ssel.value;
+  ssel.innerHTML=santriDB.map(s=>`<option value="${s.nama}"${s.nama===pprev?' selected':''}>${s.nama}</option>`).join('')||'<option>Belum ada santri</option>';
+  const now=new Date();$('lapBulan').value=now.getMonth()+1;$('lapTahun').value=now.getFullYear();
+}
+const BULAN=['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function getLapHTML(type){
+  let data=[],title='';
+  if(type==='pekan'){
+    const wk=$('lapPekan').value;if(!wk){toast('Pilih pekan dulu','err');return'';}
+    data=setoranDB.filter(s=>isoWeek(s.tgl)===wk);
+    title='Laporan Pekanan — '+weekLabel(wk);
+  } else {
+    const b=Number($('lapBulan').value),t=Number($('lapTahun').value);
+    data=setoranDB.filter(s=>{const d=new Date(String(s.tgl||'').split('T')[0]);return d.getMonth()+1===b&&d.getFullYear()===t;});
+    title='Laporan Bulanan — '+BULAN[Number($('lapBulan').value)]+' '+$('lapTahun').value;
+  }
+  const sMap={};
+  data.forEach(s=>{
+    if(!sMap[s.nama])sMap[s.nama]={hal:0,baris:0,sesiNew:0,muroj:0,tasmi:0,juzList:[]};
+    const m=sMap[s.nama];
+    if(s.kat==='Hafalan Baru'){m.hal+=(Number(s.hal)||0);m.baris+=(Number(s.baris)||0);m.sesiNew++;}
+    if(s.kat==='Murajaah'){m.muroj++;if(s.murJuz)m.juzList.push(s.murJuz);}
+    if(s.kat==="Tasmi'")m.tasmi++;
+  });
+  const rows=Object.entries(sMap).sort((a,b)=>b[1].hal-a[1].hal);
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Laporan Tahfizh</title>
+  <style>body{font-family:sans-serif;max-width:700px;margin:0 auto;padding:20px}h2{text-align:center;color:#1e6b4f;margin:8px 0}p.sub{text-align:center;color:#8c8c9e;font-size:.82rem;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:.82rem}thead tr{background:#1e6b4f;color:#fff}th,td{padding:8px 10px;text-align:left}tbody tr:nth-child(even){background:#f5f5f5}tfoot tr{background:#e8f5ee;font-weight:700}.ar{font-family:serif;font-size:1.4rem;color:#1e6b4f;text-align:center;direction:rtl;margin-bottom:4px}</style></head><body>
+  <div class="ar">حِفْظُ الْقُرْآن</div>
+  <h2>${title}</h2><p class="sub">${HALAQAH} · Dicetak: ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
+  <table><thead><tr><th>No</th><th>Nama</th><th>Hal Baru</th><th>Baris</th><th>Sesi Baru</th><th>Muroja'ah</th><th>Tasmi'</th><th>Area Muroj</th></tr></thead>
+  <tbody>${rows.map(([nm,m],i)=>`<tr><td>${i+1}</td><td><strong>${nm}</strong></td><td style="font-weight:700;color:#1e6b4f">${m.hal}</td><td>${m.baris}</td><td>${m.sesiNew}</td><td>${m.muroj}</td><td>${m.tasmi}</td><td style="font-size:.75rem;color:#8c8c9e">${[...new Set(m.juzList)].join(', ')||'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:#8c8c9e;padding:20px">Tidak ada data</td></tr>'}</tbody>
+  <tfoot><tr><td colspan="2">TOTAL</td><td>${rows.reduce((a,[,m])=>a+m.hal,0)}</td><td>${rows.reduce((a,[,m])=>a+m.baris,0)}</td><td>${rows.reduce((a,[,m])=>a+m.sesiNew,0)}</td><td>${rows.reduce((a,[,m])=>a+m.muroj,0)}</td><td>${rows.reduce((a,[,m])=>a+m.tasmi,0)}</td><td></td></tr></tfoot>
+  </table></body></html>`;
+}
+function pratinjau(type){const h=getLapHTML(type);if(!h)return;const w=window.open('','_blank');if(!w){toast('Gagal buka tab pratinjau. Izinkan popup untuk situs ini di pengaturan browser.','err',6000);return;}w.document.write(h);w.document.close();}
+function cetakPDF(type){const h=getLapHTML(type);if(!h)return;const w=window.open('','_blank');if(!w){toast('Gagal buka tab print. Izinkan popup untuk situs ini di pengaturan browser.','err',6000);return;}w.document.write(h);w.document.close();setTimeout(()=>w.print(),500);}
+
+/* ══ CONFIG ══ */
+function saveConfig(){
+  HALAQAH=$('cfgHalaqah').value.trim()||'Halaqah';
+  localStorage.setItem('halaqah_name',HALAQAH);
+  toast('Nama halaqah disimpan ✓');
+  renderAll();
+}
+
+async function cleanDataSemester(){
+  const konfirmasi=confirm(
+    '🧹 CLEAN DATA — GANTI SEMESTER\n\n'+
+    'Fitur ini akan:\n'+
+    '✅ Menghapus SEMUA data setoran (lokal & cloud)\n'+
+    '✅ Mereset progress hafalan santri\n'+
+    '❌ Data santri (nama) tetap tersimpan\n\n'+
+    '⚠️ Pastikan sudah cetak syahadah semua santri!\n'+
+    '⚠️ Data yang dihapus TIDAK bisa dikembalikan!\n\n'+
+    'Lanjutkan?'
+  );
+  if(!konfirmasi)return;
+  const konfirmasi2=prompt('Ketik "GANTI SEMESTER" untuk konfirmasi:');
+  if(konfirmasi2!=='GANTI SEMESTER'){toast('Dibatalkan','info');return;}
+
+  // Backup dulu ke JSON otomatis
+  const backup={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    halaqah:HALAQAH,
+    semester:'Backup sebelum clean '+new Date().toLocaleDateString('id-ID'),
+    setoranDB,
+    santriDB
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='backup-sebelum-clean-'+today()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Simpan ID setoran lama SEBELUM direset, agar bisa dihapus juga di Firestore
+  const oldSetoranIds=setoranDB.map(s=>String(s.id));
+
+  // Reset setoran, reset juz/hal santri ke 0
+  setoranDB=[];
+  santriDB=santriDB.map(s=>({
+    ...s,
+    juzDimiliki:Number(s.juzDimiliki||0)+Math.floor((Number(s.halDimiliki||0)+0)/20),
+    halDimiliki:0
+  }));
+  saveLocal();
+  renderAll();
+
+  // Hapus juga di Firestore, supaya tidak muncul lagi setelah sync/refresh
+  if(navigator.onLine && oldSetoranIds.length>0){
+    showLoad('Membersihkan data di cloud...');
+    try{
+      await Promise.all(oldSetoranIds.map(id=>fsDelete('setoran', id)));
+      await Promise.all(santriDB.map(s=>fsSave('santri', String(s.id), s)));
+      toast('Data semester berhasil dibersihkan ✓ (lokal & cloud). Backup otomatis sudah diunduh','ok',6000);
+    }catch(e){
+      console.error(e);
+      toast('Data lokal bersih, tapi gagal hapus di cloud: '+e.message+'. Tap "Sync dari Firestore" nanti bisa memunculkan lagi — coba ulangi Clean Data saat online.','err',9000);
+    }finally{
+      hideLoad();
+    }
+  } else if(!navigator.onLine){
+    toast('Data lokal dibersihkan. Anda sedang offline — data lama masih ada di cloud dan bisa muncul lagi saat sync. Ulangi "Clean Data" saat online untuk membersihkan cloud juga.','info',9000);
+  } else {
+    toast('Data semester berhasil dibersihkan ✓ Backup otomatis sudah diunduh','ok',6000);
+  }
+}
+
+function debugData(){
+  const sSize=new Blob([JSON.stringify(setoranDB)]).size;
+  const stSize=new Blob([JSON.stringify(santriDB)]).size;
+  const namaSantri=new Set(santriDB.map(s=>String(s.nama||'').toLowerCase().trim()));
+
+  // Cari setoran yang namanya tidak persis cocok dengan santri manapun (indikasi typo/mismatch)
+  const orphan=[...new Set(
+    setoranDB
+      .filter(s=>!namaSantri.has(String(s.nama||'').toLowerCase().trim()))
+      .map(s=>s.nama||'(tanpa nama)')
+  )];
+
+  // Cari duplikat id (seharusnya tidak pernah terjadi, tapi bagus untuk dicek)
+  const setoranIds=setoranDB.map(s=>String(s.id));
+  const dupSetoranIds=[...new Set(setoranIds.filter((id,i)=>setoranIds.indexOf(id)!==i))];
+  const santriIds=santriDB.map(s=>String(s.id));
+  const dupSantriIds=[...new Set(santriIds.filter((id,i)=>santriIds.indexOf(id)!==i))];
+
+  const fmt=b=>b>1024?(b/1024).toFixed(1)+' KB':b+' B';
+  const lines=[
+    '🔍 DEBUG DATA',
+    '',
+    '📶 Koneksi: '+(navigator.onLine?'Online':'Offline'),
+    '🏫 Halaqah: '+HALAQAH,
+    '',
+    '👥 Santri: '+santriDB.length+' data ('+fmt(stSize)+')',
+    '📋 Setoran: '+setoranDB.length+' data ('+fmt(sSize)+')',
+    '',
+    '⚠️ Setoran dgn nama tidak cocok santri: '+orphan.length,
+    orphan.length?('   → '+orphan.slice(0,10).join(', ')+(orphan.length>10?', ...':'')):'',
+    '⚠️ ID setoran duplikat: '+dupSetoranIds.length,
+    '⚠️ ID santri duplikat: '+dupSantriIds.length,
+  ].filter(l=>l!=='').join('\n');
+
+  console.log('=== DEBUG DATA ===');
+  console.log('santriDB:', santriDB);
+  console.log('setoranDB:', setoranDB);
+  console.log(lines);
+
+  alert(lines+'\n\nDetail lengkap juga dicetak ke console browser (F12 / inspect).');
+}
+
+function clearCache(){
+  if(!confirm('HAPUS DATA LOKAL?\n\nData di Firestore tidak ikut terhapus.\nData lokal akan hilang dari browser ini.'))return;
+  localStorage.removeItem('setoranDB');
+  localStorage.removeItem('santriDB');
+  localStorage.removeItem('halaqah_name');
+  setoranDB=[];santriDB=[];HALAQAH='Halaqah';
+  renderAll();
+  toast('Data lokal dihapus','info');
+}
+
+/* ══ STATUS UI ══ */
+function setStatus(state, msg){
+  const dot=$('statusDot');
+  const txt=$('statusTxt');
+  const box=$('syncStatusBox');
+  if(!dot||!txt)return;
+  if(state==='online'){
+    dot.style.background='#6ee7b7';
+    txt.textContent='Online';
+  } else if(state==='syncing'){
+    dot.style.background='#fcd34d';
+    txt.textContent='Sync...';
+  } else {
+    dot.style.background='#f87171';
+    txt.textContent='Offline';
+  }
+  if(box && msg) box.innerHTML=msg;
+}
+
+
+/* ══ FIRESTORE REST API (tanpa SDK) ══ */
+const FB_PROJECT = 'halaqah--restu';
+const FB_KEY = 'AIzaSyBmfVoLJW3-3ENu0PEK53zk7gE7rzxD0Zc';
+const FB_BASE = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
+
+// Konversi dokumen Firestore → objek JS biasa
+function fsToObj(doc) {
+  const obj = { id: doc.name.split('/').pop() };
+  for (const [k, v] of Object.entries(doc.fields || {})) {
+    if (v.stringValue !== undefined) obj[k] = v.stringValue;
+    else if (v.integerValue !== undefined) obj[k] = Number(v.integerValue);
+    else if (v.doubleValue !== undefined) obj[k] = Number(v.doubleValue);
+    else if (v.booleanValue !== undefined) obj[k] = v.booleanValue;
+    else if (v.nullValue !== undefined) obj[k] = null;
+    else obj[k] = JSON.stringify(v);
+  }
+  return obj;
+}
+
+// Konversi objek JS → format fields Firestore
+function objToFs(obj) {
+  const fields = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === 'id') continue;
+    if (typeof v === 'number' && Number.isInteger(v)) fields[k] = { integerValue: String(v) };
+    else if (typeof v === 'number') fields[k] = { doubleValue: v };
+    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+    else if (v === null || v === undefined) fields[k] = { nullValue: null };
+    else fields[k] = { stringValue: String(v) };
+  }
+  return { fields };
+}
+
+// Normalisasi data setoran dari Firestore ke format aplikasi
+function normalizeSetoran(s) {
+  // Normalisasi halaqah/waktu
+  const halaqahMap = {
+    'subuh': "Ba'da Shubuh", 'shubuh': "Ba'da Shubuh", "ba'da shubuh": "Ba'da Shubuh",
+    'ashar': "Ba'da Ashar", "ba'da ashar": "Ba'da Ashar",
+    'maghrib': "Ba'da Maghrib", "ba'da maghrib": "Ba'da Maghrib"
+  };
+  // Normalisasi kategori
+  const katMap = {
+    'murojaah': 'Murajaah', 'muroja\'ah': 'Murajaah', 'murajaah': 'Murajaah', 'murоjaah': 'Murajaah',
+    'hafalan baru': 'Hafalan Baru', 'hafalan': 'Hafalan Baru', 'baru': 'Hafalan Baru',
+    "tasmi'": "Tasmi'", 'tasmi': "Tasmi'"
+  };
+  const h = (s.halaqah||'').toLowerCase().trim();
+  const k = (s.kat||'').toLowerCase().trim();
+  return {
+    ...s,
+    halaqah: halaqahMap[h] || s.halaqah,
+    kat: katMap[k] || s.kat
+  };
+}
+
+// Normalisasi data santri dari Firestore
+function normalizeSantri(s) {
+  return {
+    ...s,
+    posisiHal: Number(s.posisiHal) || Number(s.posisiJuz*8) || 1,
+    posisiBaris: Number(s.posisiBaris) || 0,
+    targetHal: Number(s.targetHal) || 50
+  };
+}
+
+async function fsGetAll(col) {
+  let docs = [];
+  let pageToken = '';
+  do {
+    const url = `${FB_BASE}/${col}?pageSize=300&key=${FB_KEY}${pageToken ? '&pageToken='+pageToken : ''}`;
+    const r = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    (data.documents || []).forEach(d => docs.push(fsToObj(d)));
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return docs;
+}
+
+async function fsSave(col, id, obj) {
+  const url = `${FB_BASE}/${col}/${id}?key=${FB_KEY}`;
+  const r = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(objToFs(obj))
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+async function fsDelete(col, id) {
+  const r = await fetch(`${FB_BASE}/${col}/${id}?key=${FB_KEY}`, { method: 'DELETE' });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: gagal hapus di Firestore (${await r.text()})`);
+}
+
+/* ══ SYNC DARI FIRESTORE ══ */
+window.syncFromFirestore = async function(silent=false){
+  if(!navigator.onLine){
+    setStatus('offline','📴 Offline — data lokal digunakan');
+    if(!silent) toast('Tidak ada internet','err');
+    return;
+  }
+  setStatus('syncing','⏳ Sinkronisasi...');
+  try{
+    const [santriArr, setoranArr] = await Promise.all([
+      fsGetAll('santri'),
+      fsGetAll('setoran')
+    ]);
+
+    // MERGE: gabungkan data Firestore dengan data lokal
+    // Data lokal yang tidak ada di Firestore = baru ditambah, harus diupload
+    const fsSetoranIds = new Set(setoranArr.map(s=>String(s.id)));
+    const fsSantriIds = new Set(santriArr.map(s=>String(s.id)));
+
+    // Cari data lokal yang belum ada di Firestore (pending upload)
+    const localOnlySetoran = setoranDB.filter(s=>!fsSetoranIds.has(String(s.id)));
+    const localOnlySantri = santriDB.filter(s=>!fsSantriIds.has(String(s.id)));
+
+    // Upload data lokal yang pending
+    if(localOnlySetoran.length>0){
+      await Promise.all(localOnlySetoran.map(s=>fsSave('setoran',String(s.id),s)));
+    }
+    if(localOnlySantri.length>0){
+      await Promise.all(localOnlySantri.map(s=>fsSave('santri',String(s.id),s)));
+    }
+
+    // Sekarang baru timpa dengan data Firestore (sudah lengkap)
+    const finalSetoran = await fsGetAll('setoran');
+    const finalSantri = await fsGetAll('santri');
+
+    santriDB = finalSantri.map(normalizeSantri);
+    // Normalisasi nama setoran mengikuti nama resmi santri (fuzzy match)
+    const daftarNamaSantri = finalSantri.map(s=>s.nama);
+    setoranDB = finalSetoran.map(s=>{
+      const normalized = normalizeSetoran(s);
+      normalized.nama = cariNamaCocok(normalized.nama, daftarNamaSantri);
+      return normalized;
+    });
+    saveLocal();
+    renderAll();
+
+    const waktu = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    setStatus('online','✅ '+waktu+' · 👥 '+santriDB.length+' santri · 📋 '+setoranDB.length+' setoran');
+    if(!silent) toast('Sync berhasil ✓','ok');
+  } catch(e){
+    console.error(e);
+    setStatus('offline','❌ Gagal sync: '+e.message);
+    if(!silent) toast('Gagal sync: '+e.message,'err',5000);
+  }
+};
+
+/* ══ UPLOAD KE FIRESTORE ══ */
+window.pushToFirestore = async function(){
+  if(!navigator.onLine){toast('Tidak ada internet','err');return;}
+  if(!confirm('Upload data lokal ke Firestore?\n\nIni akan MENIMPA data cloud.\n\nSantri: '+santriDB.length+' | Setoran: '+setoranDB.length))return;
+  showLoad('Upload ke Firestore...');
+  setStatus('syncing','⬆️ Mengupload ke Firestore...');
+  try{
+    await Promise.all([
+      ...santriDB.map(s => fsSave('santri', String(s.id), s)),
+      ...setoranDB.map(s => fsSave('setoran', String(s.id), s))
+    ]);
+    const waktu = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    setStatus('online',`✅ Upload berhasil pukul ${waktu}`);
+    toast('Upload ke Firestore berhasil ✓','ok');
+  } catch(e){
+    console.error(e);
+    setStatus('offline','❌ Upload gagal: '+e.message);
+    toast('Gagal upload: '+e.message,'err',6000);
+  }
+  hideLoad();
+};
+
+/* ══ INIT ══ */
+window.addEventListener('DOMContentLoaded', () => {
+  $('cfgHalaqah').value = HALAQAH;
+  // Tampilkan data lokal DULU — langsung, tanpa tunggu internet
+  loadLocal();
+  window._logoYaumi='data:image/png;base64,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';
+  renderAll();
+
+  if (!navigator.onLine) {
+    setStatus('offline', '📴 Offline — data lokal digunakan ('+santriDB.length+' santri, '+setoranDB.length+' setoran)');
+    return;
+  }
+
+  // Sync Firestore di background — tidak blokir tampilan
+  setStatus('syncing', '⏳ Sinkronisasi...');
+  window.syncFromFirestore(true);
+
+  window.addEventListener('online', () => {
+    toast('Koneksi kembali! Sync...', 'info', 3000);
+    window.syncFromFirestore(true);
+  });
+  window.addEventListener('offline', () => {
+    setStatus('offline', '📴 Koneksi terputus — data lokal digunakan');
+    toast('Koneksi terputus', 'err', 3000);
+  });
+});
+</script>
+</body>
+</html>
